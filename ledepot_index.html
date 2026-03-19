@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Le Dépôt — Bibliothèque du contenu digital africain</title>
+  <meta name="description" content="Une bibliothèque collaborative où les community managers africains déposent leurs meilleures campagnes pour inspirer, référencer et valoriser le contenu digital du continent." />
+
+  <!-- Open Graph / Facebook / WhatsApp / LinkedIn -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://ledepot.createevesafrica.com" />
+  <meta property="og:title" content="Le Dépôt — Bibliothèque du contenu digital africain" />
+  <meta property="og:description" content="Une bibliothèque collaborative où les CMs africains déposent leurs meilleures campagnes. Pour s'inspirer, référencer et valoriser ce qui se fait sur le continent." />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://ledepot.createevesafrica.com" />
+  <meta name="twitter:title" content="Le Dépôt — Bibliothèque du contenu digital africain" />
+  <meta name="twitter:description" content="Une bibliothèque collaborative où les CMs africains déposent leurs meilleures campagnes. Pour s'inspirer, référencer et valoriser ce qui se fait sur le continent." />
+
+  <!-- SEO -->
+  <meta name="robots" content="index, follow" />
+  <meta name="author" content="Createeves Africa" />
+  <meta name="keywords" content="community manager afrique, contenu digital africain, campagnes réseaux sociaux afrique, bibliothèque CM, marketing digital bénin, côte d'ivoire, sénégal" />
+  <link rel="canonical" href="https://ledepot.createevesafrica.com" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #0E0E1A;
+      --cream: #FAF7F2;
+      --amber: #E8A020;
+      --amber-light: #FFF3D6;
+      --muted: #6B6878;
+      --border: #E2DDD6;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.2rem 2.5rem;
+      background: rgba(250, 247, 242, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .nav-brand span {
+      color: var(--amber);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--ink); }
+
+    .nav-cta {
+      background: var(--ink);
+      color: var(--cream) !important;
+      padding: 0.5rem 1.25rem;
+      border-radius: 4px;
+      font-weight: 500 !important;
+    }
+
+    .nav-cta:hover { background: var(--amber); color: var(--ink) !important; }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 8rem 2.5rem 5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      right: -10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(232,160,32,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      background: var(--amber-light);
+      color: var(--amber);
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.35rem 0.85rem;
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3rem, 5vw, 5rem);
+      font-weight: 900;
+      line-height: 1.05;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--amber);
+    }
+
+    .hero-desc {
+      font-size: 1.1rem;
+      line-height: 1.75;
+      color: var(--muted);
+      margin-bottom: 2.5rem;
+      font-weight: 300;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: var(--ink);
+      color: var(--cream);
+      padding: 0.85rem 2rem;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 2px solid var(--ink);
+    }
+
+    .btn-primary:hover {
+      background: var(--amber);
+      border-color: var(--amber);
+      color: var(--ink);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--ink);
+      padding: 0.85rem 2rem;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      text-decoration: none;
+      border: 2px solid var(--border);
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover { border-color: var(--ink); }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    }
+
+    .stat-card:first-child {
+      grid-column: span 2;
+      background: var(--ink);
+      color: var(--cream);
+      border-color: var(--ink);
+    }
+
+    .stat-number {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--amber);
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      font-weight: 300;
+    }
+
+    .stat-card:not(:first-child) .stat-number { color: var(--ink); }
+    .stat-card:not(:first-child) .stat-label { color: var(--muted); opacity: 1; }
+
+    /* SECTION */
+    section {
+      padding: 6rem 2.5rem;
+    }
+
+    .section-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 3vw, 2.75rem);
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 1.25rem;
+    }
+
+    .section-desc {
+      font-size: 1.05rem;
+      color: var(--muted);
+      line-height: 1.75;
+      font-weight: 300;
+      max-width: 600px;
+    }
+
+    /* HOW IT WORKS */
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 3.5rem;
+    }
+
+    .how-card {
+      padding: 2rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      position: relative;
+    }
+
+    .how-number {
+      font-family: 'Playfair Display', serif;
+      font-size: 3rem;
+      font-weight: 900;
+      color: var(--amber-light);
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+
+    .how-card h3 {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+    }
+
+    .how-card p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.65;
+      font-weight: 300;
+    }
+
+    /* GALERIE */
+    #galerie { background: white; }
+
+    /* FORMULAIRE */
+    #soumettre { background: var(--ink); }
+    #soumettre .section-label { color: var(--amber); }
+    #soumettre .section-title { color: var(--cream); }
+    #soumettre .section-desc { color: rgba(250,247,242,0.6); }
+
+    /* CTA BLOCKS */
+    .cta-block {
+      margin-top: 2.5rem;
+      background: var(--ink);
+      border-radius: 12px;
+      padding: 2.5rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .cta-block--light {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    .cta-icon {
+      font-size: 2.5rem;
+      flex-shrink: 0;
+    }
+
+    .cta-text {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .cta-text h3 {
+      font-size: 1.15rem;
+      font-weight: 500;
+      color: var(--cream);
+      margin-bottom: 0.4rem;
+    }
+
+    .cta-text p {
+      font-size: 0.9rem;
+      color: rgba(250,247,242,0.55);
+      font-weight: 300;
+      line-height: 1.6;
+    }
+
+    #galerie .cta-block {
+      background: var(--ink);
+    }
+
+    #galerie .cta-text h3 { color: var(--cream); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--cream);
+      padding: 0.85rem 2rem;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      text-decoration: none;
+      border: 2px solid rgba(255,255,255,0.3);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--ink);
+      color: var(--cream);
+      padding: 2.5rem;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .footer-brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .footer-brand span { color: var(--amber); }
+
+    .footer-credit {
+      font-size: 0.8rem;
+      color: rgba(250,247,242,0.4);
+    }
+
+    .footer-credit a {
+      color: var(--amber);
+      text-decoration: none;
+    }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-content > * {
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .hero-content > *:nth-child(1) { animation-delay: 0.1s; }
+    .hero-content > *:nth-child(2) { animation-delay: 0.2s; }
+    .hero-content > *:nth-child(3) { animation-delay: 0.3s; }
+    .hero-content > *:nth-child(4) { animation-delay: 0.4s; }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      nav { padding: 1rem 1.5rem; }
+      .nav-links { display: none; }
+      .hero { padding: 7rem 1.5rem 4rem; }
+      .hero-inner { grid-template-columns: 1fr; gap: 3rem; }
+      .hero-stats { grid-template-columns: 1fr 1fr; }
+      section { padding: 4rem 1.5rem; }
+      .how-grid { grid-template-columns: 1fr; }
+      .footer-inner { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="#" class="nav-brand">Le <span>Dépôt</span></a>
+    <ul class="nav-links">
+      <li><a href="#galerie">Bibliothèque</a></li>
+      <li><a href="#comment">Comment ça marche</a></li>
+      <li><a href="#soumettre" class="nav-cta">Soumettre un contenu</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-content">
+        <div class="hero-tag">Bibliothèque collaborative</div>
+        <h1>Le contenu digital <em>africain</em> mérite d'être vu.</h1>
+        <p class="hero-desc">Une bibliothèque où les community managers africains déposent leurs meilleures campagnes. Pour s'inspirer. Pour référencer. Pour valoriser ce qui se fait sur le continent.</p>
+        <div class="hero-actions">
+          <a href="#galerie" class="btn-primary">Explorer la bibliothèque</a>
+          <a href="#soumettre" class="btn-secondary">Déposer une campagne</a>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-card">
+          <div class="stat-number">Gratuit</div>
+          <div class="stat-label">Aucune inscription requise pour consulter ou soumettre</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">10+</div>
+          <div class="stat-label">Pays couverts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">∞</div>
+          <div class="stat-label">Campagnes à découvrir</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="comment">
+    <div class="section-inner">
+      <div class="section-label">Mode d'emploi</div>
+      <h2 class="section-title">Simple comme bonjour.</h2>
+      <p class="section-desc">Pas de compte, pas d'inscription, pas de friction. Le Dépôt est un outil de travail avant tout.</p>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-number">01</div>
+          <h3>Tu soumets ta campagne</h3>
+          <p>Lien de la publication, visuel, pays, secteur, occasion. Et surtout : l'idée derrière. Ce que les autres ne voient pas en regardant juste le visuel.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-number">02</div>
+          <h3>Elle rejoint la bibliothèque</h3>
+          <p>Ta campagne est ajoutée à la galerie consultable par tous. Filtrée par pays, secteur, occasion, année. Trouvable en 2 clics.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-number">03</div>
+          <h3>Tout le monde s'en inspire</h3>
+          <p>Un CM à Dakar trouve une campagne faite à Cotonou. Un manager à Abidjan voit comment Yaoundé a traité la fête nationale. Le niveau monte.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GALERIE -->
+  <section id="galerie">
+    <div class="section-inner">
+      <div class="section-label">Bibliothèque</div>
+      <h2 class="section-title">Les campagnes du continent.</h2>
+      <p class="section-desc">Explore, filtre par pays, secteur ou occasion. Chaque carte contient le visuel, le contexte et l'intention créative.</p>
+      <div class="cta-block">
+        <div class="cta-icon">📂</div>
+        <div class="cta-text">
+          <h3>Parcourir la bibliothèque</h3>
+          <p>Des campagnes de tout le continent, filtrables par pays, secteur, occasion et année.</p>
+        </div>
+        <a href="https://airtable.com/appgm4yFMBKoFvH6w/shrH8B39aFnpRttFB" target="_blank" class="btn-primary">Ouvrir la galerie →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORMULAIRE -->
+  <section id="soumettre">
+    <div class="section-inner">
+      <div class="section-label">Contribuer</div>
+      <h2 class="section-title">Dépose ta campagne.</h2>
+      <p class="section-desc">Tu as créé quelque chose dont tu es fier(e) ? Partage-le. Le Dépôt grandit grâce à chaque CM qui contribue.</p>
+      <div class="cta-block cta-block--light">
+        <div class="cta-icon">📥</div>
+        <div class="cta-text">
+          <h3>Soumettre un contenu</h3>
+          <p>Lien, visuel, secteur, occasion et l'idée derrière. Aucune inscription requise.</p>
+        </div>
+        <a href="https://airtable.com/appgm4yFMBKoFvH6w/pagbuA7xoduDThAZl/form" target="_blank" class="btn-outline">Remplir le formulaire →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">Le <span>Dépôt</span></div>
+      <div class="footer-credit">Par les CMs, pour les CMs. <a href="https://createevesafrica.com" target="_blank">createevesafrica.com</a></div>
+    </div>
+  </footer>
+
+</body>
+</html>
