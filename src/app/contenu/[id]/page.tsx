@@ -8,19 +8,31 @@ import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { useUser } from "@clerk/nextjs";
 import type { Id } from "../../../../convex/_generated/dataModel";
 
 export default function ContenuPage() {
   const params = useParams();
   const id = params.id as Id<"contenus">;
+  const { isSignedIn, user } = useUser();
 
   const contenu = useQuery(api.contenus.getById, { id });
   const incrementerVues = useMutation(api.contenus.incrementerVues);
+  const toggleLike = useMutation(api.likes.toggleLike);
+  const liked = useQuery(
+    api.likes.hasLiked,
+    isSignedIn && user ? { clerkId: user.id, contenuId: id } : "skip"
+  );
 
   useEffect(() => {
     if (contenu) incrementerVues({ id });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contenu?._id]);
+
+  const handleLike = async () => {
+    if (!isSignedIn || !user) return;
+    await toggleLike({ clerkId: user.id, contenuId: id });
+  };
 
   if (contenu === undefined) {
     return (
@@ -150,10 +162,31 @@ export default function ContenuPage() {
               </div>
             )}
 
-            {/* Vues */}
-            <p className="text-xs font-body text-on-surface-variant">
-              {contenu.vues} vue{contenu.vues > 1 ? "s" : ""}
-            </p>
+            {/* Vues + Likes */}
+            <div className="flex items-center gap-4">
+              <p className="text-xs font-body text-on-surface-variant">
+                {contenu.vues} vue{contenu.vues > 1 ? "s" : ""}
+              </p>
+              {isSignedIn ? (
+                <button
+                  onClick={handleLike}
+                  className={`flex items-center gap-1.5 text-sm font-label font-medium transition-colors ${
+                    liked ? "text-rose-500" : "text-on-surface-variant hover:text-rose-400"
+                  }`}
+                >
+                  <span className="text-base">{liked ? "♥" : "♡"}</span>
+                  <span>{contenu.likes ?? 0} like{(contenu.likes ?? 0) > 1 ? "s" : ""}</span>
+                </button>
+              ) : (
+                <Link
+                  href="/sign-up"
+                  className="flex items-center gap-1.5 text-sm font-label text-on-surface-variant/50 hover:text-rose-400 transition-colors"
+                >
+                  <span className="text-base">♡</span>
+                  <span>{contenu.likes ?? 0} like{(contenu.likes ?? 0) > 1 ? "s" : ""}</span>
+                </Link>
+              )}
+            </div>
 
             {/* CTA lien */}
             <a

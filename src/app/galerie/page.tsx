@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useUser } from "@clerk/nextjs";
 import { useState } from "react";
@@ -8,6 +8,7 @@ import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Image from "next/image";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 const PAYS = ["Bénin", "Côte d'Ivoire", "Sénégal", "Cameroun", "Togo", "Mali", "Burkina Faso", "Congo", "Autre"];
 const SECTEURS = ["Télécom", "Banque / Finance", "FMCG", "Mode / Beauté", "Restauration", "Médias", "ONG / Institutionnel", "iGaming", "Autre"];
@@ -35,11 +36,35 @@ function FilterSelect({
   );
 }
 
+function HeartButton({ contenuId, clerkId }: { contenuId: Id<"contenus">; clerkId: string }) {
+  const liked = useQuery(api.likes.hasLiked, { clerkId, contenuId });
+  const toggleLike = useMutation(api.likes.toggleLike);
+
+  const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await toggleLike({ clerkId, contenuId });
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="flex items-center gap-1 text-xs font-label font-medium transition-colors"
+      aria-label={liked ? "Retirer le like" : "Liker"}
+    >
+      <span className={liked ? "text-rose-500" : "text-on-surface-variant/60"}>
+        {liked ? "♥" : "♡"}
+      </span>
+    </button>
+  );
+}
+
 export default function GaleriePage() {
-  const { isSignedIn } = useUser();
+  const { isSignedIn, user } = useUser();
   const [filtres, setFiltres] = useState({
     pays: "", secteur: "", occasion: "", format: "", annee: "", type_contenu: "",
   });
+  const [triLikes, setTriLikes] = useState(false);
 
   const contenus = useQuery(api.contenus.list, {
     pays: filtres.pays || undefined,
@@ -53,11 +78,16 @@ export default function GaleriePage() {
   const setFiltre = (key: keyof typeof filtres) => (val: string) =>
     setFiltres((f) => ({ ...f, [key]: val }));
 
-  const hasFilters = Object.values(filtres).some(Boolean);
+  const hasFilters = Object.values(filtres).some(Boolean) || triLikes;
+
+  let sortedContenus = contenus;
+  if (contenus && triLikes) {
+    sortedContenus = [...contenus].sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0));
+  }
 
   // Les visiteurs voient seulement les 6 premiers
-  const visibleContenus = contenus
-    ? isSignedIn ? contenus : contenus.slice(0, LIMIT_VISITEUR)
+  const visibleContenus = sortedContenus
+    ? isSignedIn ? sortedContenus : sortedContenus.slice(0, LIMIT_VISITEUR)
     : undefined;
 
   const totalContenus = contenus?.length ?? 0;
@@ -88,9 +118,24 @@ export default function GaleriePage() {
           <FilterSelect label="Format" value={filtres.format} options={FORMATS} onChange={setFiltre("format")} />
           <FilterSelect label="Année" value={filtres.annee} options={ANNEES} onChange={setFiltre("annee")} />
           <FilterSelect label="Type" value={filtres.type_contenu} options={TYPES} onChange={setFiltre("type_contenu")} />
+
+          <button
+            onClick={() => setTriLikes((v) => !v)}
+            className={`flex items-center gap-1.5 text-sm font-label font-medium px-3 py-2 rounded-xl transition-colors ${
+              triLikes
+                ? "bg-rose-500/10 text-rose-500"
+                : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+            }`}
+          >
+            <span>♥</span> Les plus likées
+          </button>
+
           {hasFilters && (
             <button
-              onClick={() => setFiltres({ pays: "", secteur: "", occasion: "", format: "", annee: "", type_contenu: "" })}
+              onClick={() => {
+                setFiltres({ pays: "", secteur: "", occasion: "", format: "", annee: "", type_contenu: "" });
+                setTriLikes(false);
+              }}
               className="text-sm font-label font-medium text-primary hover:opacity-75 transition-opacity px-3 py-2"
             >
               Effacer
@@ -155,9 +200,27 @@ export default function GaleriePage() {
                       <h3 className="font-headline font-bold text-base text-on-surface group-hover:text-primary transition-colors line-clamp-2">
                         {c.titre}
                       </h3>
-                      <p className="text-xs font-body text-on-surface-variant mt-2">
-                        par {c.cm}
-                      </p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-xs font-body text-on-surface-variant">
+                          par {c.cm}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-on-surface-variant/60">
+                          {isSignedIn && user ? (
+                            <HeartButton contenuId={c._id} clerkId={user.id} />
+                          ) : (
+                            <Link
+                              href="/sign-up"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-on-surface-variant/40 hover:text-rose-400 transition-colors"
+                            >
+                              ♡
+                            </Link>
+                          )}
+                          {(c.likes ?? 0) > 0 && (
+                            <span>{c.likes}</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </article>
                 </Link>

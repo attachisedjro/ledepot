@@ -31,9 +31,15 @@ export default defineSchema({
       v.literal("masque")
     ),
     vues: v.number(),
+    likes: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_statut", ["statut"])
     .index("by_pays", ["pays"])
     .index("by_secteur", ["secteur"]),
+
+  likes: defineTable({
+    clerkId: v.string(),
+    contenuId: v.id("contenus"),
+  }).index("by_contenu_clerk", ["contenuId", "clerkId"]),
 });

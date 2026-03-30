@@ -6,6 +6,7 @@ import { api } from "../../../convex/_generated/api";
 import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
+import { useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 // Liste des clerkId admins — à remplacer par ton vrai ID Clerk
@@ -14,10 +15,15 @@ const ADMIN_CLERK_IDS = ["user_3BdwM1zj0AouooF7nd79x3HWeoX"];
 export default function AdminPage() {
   const { user } = useUser();
   const isAdmin = user && ADMIN_CLERK_IDS.includes(user.id);
+  const [triLikes, setTriLikes] = useState(false);
 
   const tousLesContenus = useQuery(api.contenus.list, {});
   const masquer = useMutation(api.contenus.masquer);
   const supprimer = useMutation(api.contenus.supprimer);
+
+  const contenusAffiches = tousLesContenus && triLikes
+    ? [...tousLesContenus].sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0))
+    : tousLesContenus;
 
   if (!user) return null;
 
@@ -41,20 +47,32 @@ export default function AdminPage() {
       <Navbar />
 
       <div className="pt-24 pb-16 px-6 max-w-5xl mx-auto">
-        <div className="mb-10">
-          <h1 className="font-headline font-bold text-4xl text-on-surface mb-2">Administration</h1>
-          <p className="font-body text-sm text-on-surface-variant">
-            {tousLesContenus?.length ?? "..."} contenu{(tousLesContenus?.length ?? 0) > 1 ? "s" : ""} publiés
-          </p>
+        <div className="mb-10 flex items-end justify-between gap-4">
+          <div>
+            <h1 className="font-headline font-bold text-4xl text-on-surface mb-2">Administration</h1>
+            <p className="font-body text-sm text-on-surface-variant">
+              {tousLesContenus?.length ?? "..."} contenu{(tousLesContenus?.length ?? 0) > 1 ? "s" : ""} publiés
+            </p>
+          </div>
+          <button
+            onClick={() => setTriLikes((v) => !v)}
+            className={`flex items-center gap-1.5 text-sm font-label font-medium px-3 py-2 rounded-xl transition-colors ${
+              triLikes
+                ? "bg-rose-500/10 text-rose-500"
+                : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+            }`}
+          >
+            ♥ Trier par likes
+          </button>
         </div>
 
-        {!tousLesContenus || tousLesContenus.length === 0 ? (
+        {!contenusAffiches || contenusAffiches.length === 0 ? (
           <div className="bg-surface-container rounded-2xl p-12 text-center">
             <p className="font-body text-on-surface-variant text-sm">Aucun contenu publié pour l&apos;instant.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {tousLesContenus.map((c) => (
+            {contenusAffiches.map((c) => (
               <div key={c._id} className="bg-surface-container-lowest rounded-2xl p-4 shadow-card flex gap-4 items-start">
                 {/* Visuel */}
                 <div className="w-16 h-16 rounded-xl bg-surface-container flex-shrink-0 relative overflow-hidden">
@@ -76,7 +94,7 @@ export default function AdminPage() {
                     {c.marque} · {c.pays} · {c.secteur} · {c.annee}
                   </p>
                   <p className="text-xs font-body text-on-surface-variant mt-0.5">
-                    par {c.cm} · {c.vues} vue{c.vues > 1 ? "s" : ""}
+                    par {c.cm} · {c.vues} vue{c.vues > 1 ? "s" : ""} · ♥ {c.likes ?? 0}
                   </p>
                 </div>
 
