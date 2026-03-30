@@ -14,6 +14,32 @@ const ADMIN_CLERK_IDS = ["user_3BfUEKIgwgcZ97tshB4NIVjEtag"];
 type Statut = "tous" | "publie" | "masque";
 type Tri = "recent" | "vues" | "likes";
 
+function exportCSV(filename: string, rows: (string | number)[][], headers: string[]) {
+  const escape = (val: string | number) => {
+    const s = String(val ?? "").replace(/"/g, '""');
+    return s.includes(",") || s.includes("\n") || s.includes('"') ? `"${s}"` : s;
+  };
+  const lines = [headers.map(escape).join(","), ...rows.map((r) => r.map(escape).join(","))];
+  const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function ExportButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1.5 text-xs font-label font-medium bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-xl hover:bg-surface-container-high transition-colors"
+    >
+      ↓ {label}
+    </button>
+  );
+}
+
 function KpiCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
     <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-card">
@@ -108,6 +134,31 @@ export default function AdminPage() {
     publie: "Publié", masque: "Masqué", rejete: "Rejeté",
   };
 
+  const handleExportCampagnes = () => {
+    const headers = ["Titre", "Marque", "Pays", "Secteur", "Occasion", "Format", "Année", "Type", "CM", "Vues", "Likes", "Statut"];
+    const rows = contenus.map((c) => [
+      c.titre, c.marque, c.pays, c.secteur, c.occasion, c.format, c.annee,
+      c.type_contenu ?? "", c.cm, c.vues, c.likes ?? 0, statutLabel[c.statut] ?? c.statut,
+    ]);
+    exportCSV(`ledepot-campagnes-${new Date().toISOString().slice(0, 10)}.csv`, rows, headers);
+  };
+
+  const handleExportContributeurs = () => {
+    const headers = ["Nom", "Campagnes publiées", "Vues totales", "Likes totaux"];
+    const rows = Array.from(contribMap.values())
+      .sort((a, b) => b.campagnes - a.campagnes)
+      .map((c) => [c.cm, c.campagnes, c.vues, c.likes]);
+    exportCSV(`ledepot-contributeurs-${new Date().toISOString().slice(0, 10)}.csv`, rows, headers);
+  };
+
+  const handleExportModeration = () => {
+    const headers = ["Titre", "Marque", "Pays", "Secteur", "CM", "Vues", "Likes", "Statut"];
+    const rows = modContenus.map((c) => [
+      c.titre, c.marque, c.pays, c.secteur, c.cm, c.vues, c.likes ?? 0, statutLabel[c.statut] ?? c.statut,
+    ]);
+    exportCSV(`ledepot-moderation-${new Date().toISOString().slice(0, 10)}.csv`, rows, headers);
+  };
+
   return (
     <div className="min-h-screen bg-surface">
       <Navbar />
@@ -120,19 +171,30 @@ export default function AdminPage() {
             <h1 className="font-headline font-bold text-4xl text-on-surface mb-1">Dashboard</h1>
             <p className="font-body text-sm text-on-surface-variant">Vue d&apos;ensemble · Le Dépôt</p>
           </div>
-          <div className="flex gap-1 bg-surface-container rounded-xl p-1">
-            <button
-              onClick={() => setSection("overview")}
-              className={`text-sm font-label font-medium px-4 py-2 rounded-lg transition-colors ${section === "overview" ? "bg-surface text-on-surface shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
-            >
-              Vue générale
-            </button>
-            <button
-              onClick={() => setSection("moderation")}
-              className={`text-sm font-label font-medium px-4 py-2 rounded-lg transition-colors ${section === "moderation" ? "bg-surface text-on-surface shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
-            >
-              Modération {masqués.length > 0 && <span className="ml-1 bg-error text-white text-xs px-1.5 py-0.5 rounded-full">{masqués.length}</span>}
-            </button>
+          <div className="flex items-center gap-2">
+            {section === "overview" && (
+              <>
+                <ExportButton onClick={handleExportCampagnes} label="Campagnes CSV" />
+                <ExportButton onClick={handleExportContributeurs} label="Contributeurs CSV" />
+              </>
+            )}
+            {section === "moderation" && (
+              <ExportButton onClick={handleExportModeration} label="Exporter CSV" />
+            )}
+            <div className="flex gap-1 bg-surface-container rounded-xl p-1">
+              <button
+                onClick={() => setSection("overview")}
+                className={`text-sm font-label font-medium px-4 py-2 rounded-lg transition-colors ${section === "overview" ? "bg-surface text-on-surface shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+              >
+                Vue générale
+              </button>
+              <button
+                onClick={() => setSection("moderation")}
+                className={`text-sm font-label font-medium px-4 py-2 rounded-lg transition-colors ${section === "moderation" ? "bg-surface text-on-surface shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+              >
+                Modération {masqués.length > 0 && <span className="ml-1 bg-error text-white text-xs px-1.5 py-0.5 rounded-full">{masqués.length}</span>}
+              </button>
+            </div>
           </div>
         </div>
 
