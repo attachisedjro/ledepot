@@ -89,7 +89,7 @@ export default function AdminPage() {
       });
     }
   }
-  const topContribs = [...contribMap.values()]
+  const topContribs = Array.from(contribMap.values())
     .sort((a, b) => b.campagnes - a.campagnes || b.vues - a.vues)
     .slice(0, 8);
 
