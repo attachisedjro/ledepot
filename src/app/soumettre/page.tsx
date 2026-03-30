@@ -8,8 +8,8 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 
 const PAYS = ["Bénin", "Côte d'Ivoire", "Sénégal", "Cameroun", "Togo", "Mali", "Burkina Faso", "Congo", "Autre"];
-const SECTEURS = ["Télécom", "Banque / Finance", "FMCG", "Mode / Beauté", "Restauration", "Médias", "ONG / Institutionnel", "iGaming", "Autre"];
-const OCCASIONS = ["Saint-Valentin", "Fête des mères", "Fête des pères", "Fête nationale", "Rentrée", "Noël", "Lancement produit", "Ramadan", "Pâques", "Autre"];
+const SECTEURS = ["Télécom", "Banque / Finance", "FMCG", "Mode / Beauté", "Restauration", "Médias", "ONG / Institutionnel", "iGaming", "Immobilier", "Santé / Pharmacie", "Éducation / EdTech", "Transport / Mobilité", "Énergie / Solaire", "Agriculture / Agro-industrie", "Assurance", "E-commerce / Marketplace", "Tech / Startups", "Autre"];
+const OCCASIONS = ["Saint-Valentin", "Fête des mères", "Fête des pères", "Fête nationale", "Rentrée scolaire", "Noël", "Lancement produit", "Ramadan", "Korité / Aïd el-Fitr", "Tabaski / Aïd el-Kébir", "Pâques", "Fête du travail", "Journée internationale des droits des femmes", "Journée internationale de la jeunesse", "Black Friday / Cyber Monday", "Journée mondiale de l'environnement", "Anniversaire de marque", "Autre"];
 const FORMATS = ["Image statique", "Carrousel", "Vidéo", "Reel", "Story", "Autre"];
 const ANNEES = ["2022", "2023", "2024", "2025", "2026"];
 const TYPES = ["Publication organique", "Campagne payante", "UGC", "Influenceur", "Activation terrain", "Autre"];

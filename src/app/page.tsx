@@ -1,45 +1,7 @@
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-
-const FEATURED_CAMPAIGNS = [
-  {
-    id: "1",
-    titre: "Renaissance Sahélienne",
-    marque: "SAFTIKING",
-    pays: "Sénégal",
-    secteur: "Mode / Beauté",
-    cm: "Amadou Diop",
-    color: "#e8c49a",
-  },
-  {
-    id: "2",
-    titre: "FintechHorizon",
-    marque: "FinPay",
-    pays: "Côte d'Ivoire",
-    secteur: "Banque / Finance",
-    cm: "Mariama Koné",
-    color: "#1c2a3a",
-  },
-  {
-    id: "3",
-    titre: "Galerie Nomade",
-    marque: "ArtCo Dakar",
-    pays: "Sénégal",
-    secteur: "Médias",
-    cm: "Fatou Sarr",
-    color: "#8b5e3c",
-  },
-  {
-    id: "4",
-    titre: "Pulse Abidjan",
-    marque: "BrassAbidjan",
-    pays: "Côte d'Ivoire",
-    secteur: "FMCG",
-    cm: "Koffi Assi",
-    color: "#2c3e50",
-  },
-];
+import DernieresCampagnes from "@/components/home/DernieresCampagnes";
 
 const HOW_IT_WORKS = [
   {
@@ -127,34 +89,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {FEATURED_CAMPAIGNS.map((c) => (
-              <article
-                key={c.id}
-                className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-card hover:shadow-ambient transition-shadow group cursor-pointer"
-              >
-                <div
-                  className="w-full aspect-[4/5] flex items-end p-4"
-                  style={{ backgroundColor: c.color }}
-                >
-                  <span className="text-white/80 text-xs font-label font-medium bg-black/20 px-2 py-1 rounded-full">
-                    {c.pays}
-                  </span>
-                </div>
-                <div className="p-4">
-                  <p className="text-xs font-label text-on-surface-variant mb-1">
-                    {c.marque} · {c.secteur}
-                  </p>
-                  <h3 className="font-headline font-bold text-base text-on-surface group-hover:text-primary transition-colors">
-                    {c.titre}
-                  </h3>
-                  <p className="text-xs font-body text-on-surface-variant mt-2">
-                    par {c.cm}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
+          <DernieresCampagnes />
 
           <div className="mt-8 text-center md:hidden">
             <Link href="/galerie" className="text-sm font-label font-medium text-primary">
