@@ -9,7 +9,7 @@ import Navbar from "@/components/layout/Navbar";
 import { useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 
-const ADMIN_CLERK_IDS = ["user_3BdwM1zj0AouooF7nd79x3HWeoX"];
+const ADMIN_CLERK_IDS = ["user_3BfUEKIgwgcZ97tshB4NIVjEtag"];
 
 type Statut = "tous" | "publie" | "masque";
 type Tri = "recent" | "vues" | "likes";
