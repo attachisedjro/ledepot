@@ -43,6 +43,14 @@ export const getById = query({
   },
 });
 
+// Admin — liste tous les utilisateurs
+export const listAll = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("users").collect();
+  },
+});
+
 // Met à jour le profil
 export const updateProfile = mutation({
   args: {
