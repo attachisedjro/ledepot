@@ -71,6 +71,7 @@ export default function SoumettreePage() {
     intention_creative: "",
     type_contenu: "",
   });
+  const [occasionLibre, setOccasionLibre] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -99,6 +100,10 @@ export default function SoumettreePage() {
       setError("Merci de remplir tous les champs obligatoires.");
       return;
     }
+    if (form.occasion === "Autre" && !occasionLibre.trim()) {
+      setError("Merci de préciser l'occasion.");
+      return;
+    }
     if (!file) {
       setError("Un visuel est obligatoire.");
       return;
@@ -121,6 +126,7 @@ export default function SoumettreePage() {
         prenom: user.firstName ?? "",
         nom: user.lastName ?? "",
         ...form,
+        occasion: form.occasion === "Autre" ? occasionLibre.trim() : form.occasion,
         visuel_storage_id: storageId,
         type_contenu: form.type_contenu || undefined,
       });
@@ -184,6 +190,16 @@ export default function SoumettreePage() {
                 <option value="">Sélectionner</option>
                 {OCCASIONS.map((o) => <option key={o} value={o}>{o}</option>)}
               </Select>
+              {form.occasion === "Autre" && (
+                <div className="mt-2">
+                  <Input
+                    placeholder="Précise l'occasion..."
+                    value={occasionLibre}
+                    onChange={(e) => setOccasionLibre(e.target.value)}
+                    maxLength={80}
+                  />
+                </div>
+              )}
             </div>
             <div>
               <Label required>Format</Label>
