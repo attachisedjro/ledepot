@@ -126,6 +126,28 @@ export const generateUploadUrl = mutation({
   },
 });
 
+// Admin — liste tous les contenus sans filtre de statut
+export const listAll = query({
+  args: {},
+  handler: async (ctx) => {
+    const contenus = await ctx.db.query("contenus").order("desc").collect();
+    return await Promise.all(
+      contenus.map(async (c) => {
+        const user = await ctx.db.get(c.userId);
+        return { ...c, cm: user ? `${user.prenom} ${user.nom}` : "Anonyme" };
+      })
+    );
+  },
+});
+
+// Admin — remet un contenu en statut publié
+export const republier = mutation({
+  args: { id: v.id("contenus") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.id, { statut: "publie" });
+  },
+});
+
 // Admin — masque un contenu
 export const masquer = mutation({
   args: { id: v.id("contenus") },
