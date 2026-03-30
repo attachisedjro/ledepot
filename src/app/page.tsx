@@ -56,7 +56,7 @@ export default function HomePage() {
               Explorer la bibliothèque
             </Link>
             <Link
-              href="/sign-up"
+              href="/soumettre"
               className="bg-surface-container text-on-surface font-label font-medium px-7 py-3.5 rounded-xl hover:bg-surface-container-high transition-colors text-sm"
             >
               Soumettre une campagne
@@ -138,7 +138,7 @@ export default function HomePage() {
             les CMs de tout le continent.
           </p>
           <Link
-            href="/sign-up"
+            href="/soumettre"
             className="btn-gradient text-white font-label font-medium px-8 py-4 rounded-xl text-sm hover:opacity-90 transition-opacity inline-block"
           >
             Soumettre ma première campagne
