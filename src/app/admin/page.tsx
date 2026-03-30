@@ -29,14 +29,196 @@ function exportCSV(filename: string, rows: (string | number)[][], headers: strin
   URL.revokeObjectURL(url);
 }
 
-function ExportButton({ onClick, label }: { onClick: () => void; label: string }) {
+const PAYS_OPTIONS = ["Bénin", "Côte d'Ivoire", "Sénégal", "Cameroun", "Togo", "Mali", "Burkina Faso", "Congo", "Autre"];
+const SECTEURS_OPTIONS = ["Télécom", "Banque / Finance", "FMCG", "Mode / Beauté", "Restauration", "Médias", "ONG / Institutionnel", "iGaming", "Immobilier", "Santé / Pharmacie", "Éducation / EdTech", "Transport / Mobilité", "Énergie / Solaire", "Agriculture / Agro-industrie", "Assurance", "E-commerce / Marketplace", "Tech / Startups", "Autre"];
+
+type ExportFilters = {
+  dateDebut: string;
+  dateFin: string;
+  pays: string;
+  secteur: string;
+  statut: "tous" | "publie" | "masque";
+  type: "campagnes" | "contributeurs";
+};
+
+type ContenuWithCm = {
+  _id: Id<"contenus">;
+  _creationTime: number;
+  titre: string;
+  marque: string;
+  pays: string;
+  secteur: string;
+  occasion: string;
+  format: string;
+  annee: string;
+  type_contenu?: string;
+  lien_publication: string;
+  intention_creative: string;
+  statut: string;
+  vues: number;
+  likes?: number;
+  cm: string;
+  userId: Id<"users">;
+  visuel_url?: string;
+  visuel_storage_id?: Id<"_storage">;
+};
+
+function ExportModal({
+  contenus,
+  onClose,
+}: {
+  contenus: ContenuWithCm[];
+  onClose: () => void;
+}) {
+  const [filters, setFilters] = useState<ExportFilters>({
+    dateDebut: "",
+    dateFin: "",
+    pays: "",
+    secteur: "",
+    statut: "tous",
+    type: "campagnes",
+  });
+
+  const set = (key: keyof ExportFilters) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => setFilters((f) => ({ ...f, [key]: e.target.value }));
+
+  const filtered = contenus.filter((c) => {
+    if (filters.statut !== "tous" && c.statut !== filters.statut) return false;
+    if (filters.pays && c.pays !== filters.pays) return false;
+    if (filters.secteur && c.secteur !== filters.secteur) return false;
+    if (filters.dateDebut) {
+      const debut = new Date(filters.dateDebut).getTime();
+      if (c._creationTime < debut) return false;
+    }
+    if (filters.dateFin) {
+      const fin = new Date(filters.dateFin).getTime() + 86400000;
+      if (c._creationTime > fin) return false;
+    }
+    return true;
+  });
+
+  const handleExport = () => {
+    if (filters.type === "campagnes") {
+      const headers = ["Date soumission", "Titre", "Marque", "Pays", "Secteur", "Occasion", "Format", "Année", "Type", "CM", "Vues", "Likes", "Statut"];
+      const rows = filtered.map((c) => [
+        new Date(c._creationTime).toLocaleDateString("fr"),
+        c.titre, c.marque, c.pays, c.secteur, c.occasion, c.format, c.annee,
+        c.type_contenu ?? "", c.cm, c.vues, c.likes ?? 0,
+        c.statut === "publie" ? "Publié" : c.statut === "masque" ? "Masqué" : "Rejeté",
+      ]);
+      exportCSV(`ledepot-campagnes-${new Date().toISOString().slice(0, 10)}.csv`, rows, headers);
+    } else {
+      const contribMap = new Map<string, { cm: string; campagnes: number; vues: number; likes: number }>();
+      for (const c of filtered) {
+        const key = c.userId;
+        const ex = contribMap.get(key);
+        if (ex) { ex.campagnes++; ex.vues += c.vues; ex.likes += c.likes ?? 0; }
+        else contribMap.set(key, { cm: c.cm, campagnes: 1, vues: c.vues, likes: c.likes ?? 0 });
+      }
+      const headers = ["Community Manager", "Campagnes publiées", "Vues totales", "Likes totaux"];
+      const rows = Array.from(contribMap.values())
+        .sort((a, b) => b.campagnes - a.campagnes)
+        .map((c) => [c.cm, c.campagnes, c.vues, c.likes]);
+      exportCSV(`ledepot-contributeurs-${new Date().toISOString().slice(0, 10)}.csv`, rows, headers);
+    }
+    onClose();
+  };
+
+  const fieldClass = "w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none";
+
   return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-1.5 text-xs font-label font-medium bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-xl hover:bg-surface-container-high transition-colors"
-    >
-      ↓ {label}
-    </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-surface rounded-2xl shadow-ambient w-full max-w-md p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <h2 className="font-headline font-bold text-xl text-on-surface">Exporter les données</h2>
+          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface text-xl leading-none">×</button>
+        </div>
+
+        {/* Type d'export */}
+        <div>
+          <p className="text-xs font-label text-on-surface-variant mb-2">Type d&apos;export</p>
+          <div className="flex gap-2">
+            {([["campagnes", "Campagnes"], ["contributeurs", "Contributeurs"]] as [ExportFilters["type"], string][]).map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setFilters((f) => ({ ...f, type: val }))}
+                className={`flex-1 text-sm font-label font-medium py-2 rounded-xl transition-colors ${filters.type === val ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Période */}
+        <div>
+          <p className="text-xs font-label text-on-surface-variant mb-2">Période de soumission</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs text-on-surface-variant mb-1">Du</p>
+              <input type="date" value={filters.dateDebut} onChange={set("dateDebut")} className={fieldClass} />
+            </div>
+            <div>
+              <p className="text-xs text-on-surface-variant mb-1">Au</p>
+              <input type="date" value={filters.dateFin} onChange={set("dateFin")} className={fieldClass} />
+            </div>
+          </div>
+        </div>
+
+        {/* Filtres */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs font-label text-on-surface-variant mb-1">Pays</p>
+            <select value={filters.pays} onChange={set("pays")} className={fieldClass}>
+              <option value="">Tous</option>
+              {PAYS_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+          <div>
+            <p className="text-xs font-label text-on-surface-variant mb-1">Secteur</p>
+            <select value={filters.secteur} onChange={set("secteur")} className={fieldClass}>
+              <option value="">Tous</option>
+              {SECTEURS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-xs font-label text-on-surface-variant mb-1">Statut</p>
+          <select value={filters.statut} onChange={set("statut")} className={fieldClass}>
+            <option value="tous">Tous</option>
+            <option value="publie">Publiés uniquement</option>
+            <option value="masque">Masqués uniquement</option>
+          </select>
+        </div>
+
+        {/* Aperçu */}
+        <div className="bg-primary/10 rounded-xl px-4 py-3 flex items-center justify-between">
+          <p className="text-sm font-body text-on-surface">
+            {filters.type === "campagnes"
+              ? `${filtered.length} campagne${filtered.length > 1 ? "s" : ""} à exporter`
+              : `${filtered.length} campagne${filtered.length > 1 ? "s" : ""} → données contributeurs`}
+          </p>
+          <span className="font-headline font-bold text-xl text-primary">{filtered.length}</span>
+        </div>
+
+        {/* Boutons */}
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 bg-surface-container text-on-surface text-sm font-label font-medium py-3 rounded-xl hover:bg-surface-container-high transition-colors">
+            Annuler
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={filtered.length === 0}
+            className="flex-1 btn-gradient text-on-primary text-sm font-label font-medium py-3 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-40"
+          >
+            ↓ Télécharger CSV
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -57,6 +239,7 @@ export default function AdminPage() {
   const [filtreStatut, setFiltreStatut] = useState<Statut>("tous");
   const [tri, setTri] = useState<Tri>("recent");
   const [section, setSection] = useState<"overview" | "moderation">("overview");
+  const [showExport, setShowExport] = useState(false);
 
   const tousLesContenus = useQuery(api.contenus.listAll, {});
   const tousLesUsers = useQuery(api.users.listAll, {});
@@ -134,34 +317,16 @@ export default function AdminPage() {
     publie: "Publié", masque: "Masqué", rejete: "Rejeté",
   };
 
-  const handleExportCampagnes = () => {
-    const headers = ["Titre", "Marque", "Pays", "Secteur", "Occasion", "Format", "Année", "Type", "CM", "Vues", "Likes", "Statut"];
-    const rows = contenus.map((c) => [
-      c.titre, c.marque, c.pays, c.secteur, c.occasion, c.format, c.annee,
-      c.type_contenu ?? "", c.cm, c.vues, c.likes ?? 0, statutLabel[c.statut] ?? c.statut,
-    ]);
-    exportCSV(`ledepot-campagnes-${new Date().toISOString().slice(0, 10)}.csv`, rows, headers);
-  };
-
-  const handleExportContributeurs = () => {
-    const headers = ["Nom", "Campagnes publiées", "Vues totales", "Likes totaux"];
-    const rows = Array.from(contribMap.values())
-      .sort((a, b) => b.campagnes - a.campagnes)
-      .map((c) => [c.cm, c.campagnes, c.vues, c.likes]);
-    exportCSV(`ledepot-contributeurs-${new Date().toISOString().slice(0, 10)}.csv`, rows, headers);
-  };
-
-  const handleExportModeration = () => {
-    const headers = ["Titre", "Marque", "Pays", "Secteur", "CM", "Vues", "Likes", "Statut"];
-    const rows = modContenus.map((c) => [
-      c.titre, c.marque, c.pays, c.secteur, c.cm, c.vues, c.likes ?? 0, statutLabel[c.statut] ?? c.statut,
-    ]);
-    exportCSV(`ledepot-moderation-${new Date().toISOString().slice(0, 10)}.csv`, rows, headers);
-  };
-
   return (
     <div className="min-h-screen bg-surface">
       <Navbar />
+
+      {showExport && (
+        <ExportModal
+          contenus={contenus as ContenuWithCm[]}
+          onClose={() => setShowExport(false)}
+        />
+      )}
 
       <div className="pt-24 pb-16 px-6 max-w-6xl mx-auto">
 
@@ -172,15 +337,12 @@ export default function AdminPage() {
             <p className="font-body text-sm text-on-surface-variant">Vue d&apos;ensemble · Le Dépôt</p>
           </div>
           <div className="flex items-center gap-2">
-            {section === "overview" && (
-              <>
-                <ExportButton onClick={handleExportCampagnes} label="Campagnes CSV" />
-                <ExportButton onClick={handleExportContributeurs} label="Contributeurs CSV" />
-              </>
-            )}
-            {section === "moderation" && (
-              <ExportButton onClick={handleExportModeration} label="Exporter CSV" />
-            )}
+            <button
+              onClick={() => setShowExport(true)}
+              className="flex items-center gap-1.5 text-sm font-label font-medium bg-surface-container text-on-surface-variant px-4 py-2 rounded-xl hover:bg-surface-container-high transition-colors"
+            >
+              ↓ Exporter
+            </button>
             <div className="flex gap-1 bg-surface-container rounded-xl p-1">
               <button
                 onClick={() => setSection("overview")}
