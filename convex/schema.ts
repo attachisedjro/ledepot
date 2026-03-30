@@ -1,0 +1,39 @@
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+export default defineSchema({
+  users: defineTable({
+    clerkId: v.string(),
+    nom: v.string(),
+    prenom: v.string(),
+    pays: v.optional(v.string()),
+    bio: v.optional(v.string()),
+    linkedin_url: v.optional(v.string()),
+  }).index("by_clerk_id", ["clerkId"]),
+
+  contenus: defineTable({
+    userId: v.id("users"),
+    titre: v.string(),
+    marque: v.string(),
+    pays: v.string(),
+    secteur: v.string(),
+    occasion: v.string(),
+    format: v.string(),
+    annee: v.string(),
+    lien_publication: v.string(),
+    visuel_url: v.optional(v.string()),
+    visuel_storage_id: v.optional(v.id("_storage")),
+    intention_creative: v.string(),
+    type_contenu: v.optional(v.string()),
+    statut: v.union(
+      v.literal("publie"),
+      v.literal("rejete"),
+      v.literal("masque")
+    ),
+    vues: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_statut", ["statut"])
+    .index("by_pays", ["pays"])
+    .index("by_secteur", ["secteur"]),
+});
