@@ -3,7 +3,7 @@
 import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
@@ -12,6 +12,7 @@ const PAYS = ["Bénin", "Côte d'Ivoire", "Sénégal", "Cameroun", "Togo", "Mali
 
 export default function MonComptePage() {
   const { user } = useUser();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const userProfile = useQuery(
     api.users.getByClerkId,
@@ -20,6 +21,7 @@ export default function MonComptePage() {
 
   const upsertUser = useMutation(api.users.upsertUser);
   const updateProfile = useMutation(api.users.updateProfile);
+  const generateAvatarUploadUrl = useMutation(api.users.generateAvatarUploadUrl);
 
   const contenus = useQuery(
     api.contenus.getByUser,
@@ -29,6 +31,7 @@ export default function MonComptePage() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ nom: "", prenom: "", pays: "", bio: "", linkedin_url: "" });
   const [saving, setSaving] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   // Crée le profil si inexistant
   useEffect(() => {
@@ -53,6 +56,35 @@ export default function MonComptePage() {
       });
     }
   }, [userProfile]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 3 * 1024 * 1024) return; // 3MB max
+
+    setAvatarUploading(true);
+    try {
+      const uploadUrl = await generateAvatarUploadUrl();
+      const res = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      const { storageId } = await res.json();
+
+      await updateProfile({
+        clerkId: user.id,
+        nom: userProfile?.nom ?? user.lastName ?? "",
+        prenom: userProfile?.prenom ?? user.firstName ?? "",
+        pays: userProfile?.pays,
+        bio: userProfile?.bio,
+        linkedin_url: userProfile?.linkedin_url,
+        avatar_storage_id: storageId,
+      });
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -87,6 +119,8 @@ export default function MonComptePage() {
     rejete: "Rejeté",
   };
 
+  const initiales = `${(userProfile?.prenom ?? user.firstName ?? "?").charAt(0)}${(userProfile?.nom ?? user.lastName ?? "").charAt(0)}`;
+
   return (
     <div className="min-h-screen bg-surface">
       <Navbar />
@@ -98,11 +132,43 @@ export default function MonComptePage() {
           {/* Sidebar profil */}
           <div className="md:col-span-1 space-y-4">
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-card">
-              <div className="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center mb-4">
-                <span className="font-headline font-bold text-2xl text-primary">
-                  {(userProfile?.prenom ?? user.firstName ?? "?").charAt(0)}
-                  {(userProfile?.nom ?? user.lastName ?? "").charAt(0)}
-                </span>
+              {/* Avatar cliquable */}
+              <div className="relative w-16 h-16 mb-4 group">
+                <button
+                  type="button"
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="w-16 h-16 rounded-2xl overflow-hidden bg-surface-container flex items-center justify-center relative"
+                  title="Changer la photo"
+                >
+                  {userProfile?.avatar_url ? (
+                    <Image
+                      src={userProfile.avatar_url}
+                      alt={initiales}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="font-headline font-bold text-2xl text-primary">
+                      {initiales}
+                    </span>
+                  )}
+                  {/* Overlay au hover */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
+                    <span className="text-white text-xs font-label">Photo</span>
+                  </div>
+                  {avatarUploading && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-2xl">
+                      <span className="text-white text-xs">...</span>
+                    </div>
+                  )}
+                </button>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
               </div>
 
               {editing ? (

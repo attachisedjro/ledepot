@@ -47,10 +47,19 @@ export default function ProfilPage() {
         {/* Profil header */}
         <div className="flex flex-col md:flex-row gap-8 items-start mb-14">
           {/* Avatar */}
-          <div className="w-24 h-24 rounded-2xl bg-surface-container flex items-center justify-center flex-shrink-0">
-            <span className="font-headline font-bold text-3xl text-primary">
-              {user.prenom.charAt(0)}{user.nom.charAt(0)}
-            </span>
+          <div className="w-24 h-24 rounded-2xl bg-surface-container flex items-center justify-center flex-shrink-0 relative overflow-hidden">
+            {user.avatar_url ? (
+              <Image
+                src={user.avatar_url}
+                alt={`${user.prenom} ${user.nom}`}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <span className="font-headline font-bold text-3xl text-primary">
+                {user.prenom.charAt(0)}{user.nom.charAt(0)}
+              </span>
+            )}
           </div>
 
           {/* Infos */}

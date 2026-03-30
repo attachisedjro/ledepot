@@ -9,6 +9,8 @@ export default defineSchema({
     pays: v.optional(v.string()),
     bio: v.optional(v.string()),
     linkedin_url: v.optional(v.string()),
+    avatar_url: v.optional(v.string()),
+    avatar_storage_id: v.optional(v.id("_storage")),
   }).index("by_clerk_id", ["clerkId"]),
 
   contenus: defineTable({
