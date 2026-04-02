@@ -116,7 +116,7 @@ function ExportModal({
         if (ex) { ex.campagnes++; ex.vues += c.vues; ex.likes += c.likes ?? 0; }
         else contribMap.set(key, { cm: c.cm, campagnes: 1, vues: c.vues, likes: c.likes ?? 0 });
       }
-      const headers = ["Community Manager", "Campagnes publiées", "Vues totales", "Likes totaux"];
+      const headers = ["Contributeur", "Campagnes publiées", "Vues totales", "Likes totaux"];
       const rows = Array.from(contribMap.values())
         .sort((a, b) => b.campagnes - a.campagnes)
         .map((c) => [c.cm, c.campagnes, c.vues, c.likes]);
@@ -367,7 +367,7 @@ export default function AdminPage() {
               <KpiCard label="Campagnes totales" value={contenus.length} />
               <KpiCard label="Publiées" value={publiés.length} />
               <KpiCard label="Masquées" value={masqués.length} />
-              <KpiCard label="CMs inscrits" value={nbCMs} />
+              <KpiCard label="Membres inscrits" value={nbCMs} />
               <KpiCard label="Vues totales" value={totalVues.toLocaleString("fr")} />
               <KpiCard label="Likes totaux" value={`♥ ${totalLikes}`} />
             </div>
@@ -469,7 +469,7 @@ export default function AdminPage() {
                     <thead>
                       <tr className="border-b border-outline-variant/20">
                         <th className="text-left text-xs font-label text-on-surface-variant px-4 py-3">#</th>
-                        <th className="text-left text-xs font-label text-on-surface-variant px-4 py-3">Community Manager</th>
+                        <th className="text-left text-xs font-label text-on-surface-variant px-4 py-3">Contributeur</th>
                         <th className="text-right text-xs font-label text-on-surface-variant px-4 py-3">Campagnes</th>
                         <th className="text-right text-xs font-label text-on-surface-variant px-4 py-3">Vues</th>
                         <th className="text-right text-xs font-label text-on-surface-variant px-4 py-3">Likes</th>

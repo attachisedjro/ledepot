@@ -126,7 +126,7 @@ export default function ContenuPage() {
             {/* CM */}
             <div className="bg-surface-container p-4 rounded-2xl">
               <p className="text-xs font-label text-on-surface-variant mb-1">
-                Community Manager
+                Contributeur
               </p>
               <Link
                 href={`/profil/${contenu.userId}`}

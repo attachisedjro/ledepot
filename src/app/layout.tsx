@@ -20,7 +20,7 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "Le Dépôt — Le contenu digital africain mérite d'être vu",
   description:
-    "La bibliothèque collaborative où les community managers africains francophones soumettent, découvrent et s'inspirent des meilleures campagnes du continent.",
+    "La bibliothèque collaborative où les professionnels de la communication africains francophones soumettent, découvrent et s'inspirent des meilleures campagnes du continent.",
   icons: {
     icon: "/favicon.png",
   },

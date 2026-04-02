@@ -12,12 +12,12 @@ const HOW_IT_WORKS = [
   {
     step: "02",
     titre: "Elle rejoint la bibliothèque",
-    desc: "Ta campagne est publiée immédiatement et visible par tous les CMs du continent.",
+    desc: "Ta campagne est publiée immédiatement et visible par tous les pros de la com du continent.",
   },
   {
     step: "03",
     titre: "Tout le monde s'en inspire",
-    desc: "Un CM à Dakar trouve une campagne faite à Cotonou. Le niveau monte pour tout le monde.",
+    desc: "Un professionnel à Dakar trouve une campagne faite à Cotonou. Le niveau monte pour tout le monde.",
   },
 ];
 
@@ -42,7 +42,7 @@ export default function HomePage() {
           </h1>
 
           <p className="font-body text-lg text-on-surface-variant leading-relaxed mb-10 max-w-xl">
-            Les CMs africains créent chaque jour des campagnes remarquables qui
+            Les marques africaines créent chaque jour des campagnes remarquables qui
             disparaissent dans le flux. Le Dépôt est là pour les garder,
             les valoriser et les partager.
           </p>
@@ -78,7 +78,7 @@ export default function HomePage() {
                 Dernières campagnes
               </h2>
               <p className="font-body text-on-surface-variant text-sm">
-                Ce que les CMs du continent ont créé récemment.
+                Ce que les marques du continent ont créé récemment.
               </p>
             </div>
             <Link
@@ -135,7 +135,7 @@ export default function HomePage() {
           </h2>
           <p className="font-body text-on-surface-variant mb-8 leading-relaxed">
             Partage l&apos;idée derrière. Ton travail mérite d&apos;être vu par
-            les CMs de tout le continent.
+            les pros de la com de tout le continent.
           </p>
           <Link
             href="/soumettre"
