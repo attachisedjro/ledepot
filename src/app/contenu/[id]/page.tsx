@@ -16,7 +16,7 @@ export async function generateMetadata({
 
   const title = `${contenu.titre} - Le Dépôt`;
   const description = contenu.intention_creative.slice(0, 200);
-  const images = contenu.visuel_url ? [{ url: contenu.visuel_url }] : [{ url: "/favicon.png" }];
+  const images = contenu.visuel_url ? [{ url: contenu.visuel_url }] : [{ url: "/og-image.png" }];
 
   return {
     title,
@@ -31,7 +31,7 @@ export async function generateMetadata({
       card: contenu.visuel_url ? "summary_large_image" : "summary",
       title,
       description,
-      images: contenu.visuel_url ? [contenu.visuel_url] : ["/favicon.png"],
+      images: contenu.visuel_url ? [contenu.visuel_url] : ["/og-image.png"],
     },
   };
 }

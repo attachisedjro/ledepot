@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     title: "Le Dépôt - Le contenu digital africain mérite d'être vu",
     description:
       "La bibliothèque collaborative où les professionnels de la communication africains francophones soumettent, découvrent et s'inspirent des meilleures campagnes du continent.",
-    images: [{ url: "/favicon.png" }],
+    images: [{ url: "/og-image.png" }],
     locale: "fr_FR",
     type: "website",
   },
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     title: "Le Dépôt - Le contenu digital africain mérite d'être vu",
     description:
       "La bibliothèque collaborative où les professionnels de la communication africains francophones soumettent, découvrent et s'inspirent des meilleures campagnes du continent.",
-    images: ["/favicon.png"],
+    images: ["/og-image.png"],
   },
 };
 
