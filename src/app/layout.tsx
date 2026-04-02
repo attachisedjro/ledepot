@@ -18,11 +18,27 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Le Dépôt — Le contenu digital africain mérite d'être vu",
+  metadataBase: new URL("https://ledepot.createevesafrica.com"),
+  title: "Le Dépôt - Le contenu digital africain mérite d'être vu",
   description:
     "La bibliothèque collaborative où les professionnels de la communication africains francophones soumettent, découvrent et s'inspirent des meilleures campagnes du continent.",
   icons: {
     icon: "/favicon.png",
+  },
+  openGraph: {
+    title: "Le Dépôt - Le contenu digital africain mérite d'être vu",
+    description:
+      "La bibliothèque collaborative où les professionnels de la communication africains francophones soumettent, découvrent et s'inspirent des meilleures campagnes du continent.",
+    images: [{ url: "/favicon.png" }],
+    locale: "fr_FR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Le Dépôt - Le contenu digital africain mérite d'être vu",
+    description:
+      "La bibliothèque collaborative où les professionnels de la communication africains francophones soumettent, découvrent et s'inspirent des meilleures campagnes du continent.",
+    images: ["/favicon.png"],
   },
 };
 
