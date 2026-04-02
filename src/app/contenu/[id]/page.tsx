@@ -14,24 +14,24 @@ export async function generateMetadata({
     return { title: "Campagne introuvable - Le Dépôt" };
   }
 
-  const title = `${contenu.titre} - ${contenu.marque} | Le Dépôt`;
+  const title = `${contenu.titre} - Le Dépôt`;
   const description = contenu.intention_creative.slice(0, 200);
-  const images = contenu.visuel_url ? [{ url: contenu.visuel_url }] : [];
+  const images = contenu.visuel_url ? [{ url: contenu.visuel_url }] : [{ url: "/favicon.png" }];
 
   return {
     title,
     description,
     openGraph: {
-      title: `${contenu.titre} - ${contenu.marque}`,
+      title,
       description,
       images,
       type: "article",
     },
     twitter: {
       card: contenu.visuel_url ? "summary_large_image" : "summary",
-      title: `${contenu.titre} - ${contenu.marque}`,
+      title,
       description,
-      images: contenu.visuel_url ? [contenu.visuel_url] : [],
+      images: contenu.visuel_url ? [contenu.visuel_url] : ["/favicon.png"],
     },
   };
 }

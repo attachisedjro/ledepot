@@ -25,14 +25,14 @@ export async function generateMetadata({
     openGraph: {
       title: `${nom} sur Le Dépôt`,
       description,
-      images: user.avatar_url ? [{ url: user.avatar_url }] : [],
+      images: [{ url: "/favicon.png" }],
       type: "profile",
     },
     twitter: {
-      card: user.avatar_url ? "summary_large_image" : "summary",
+      card: "summary",
       title: `${nom} sur Le Dépôt`,
       description,
-      images: user.avatar_url ? [user.avatar_url] : [],
+      images: ["/favicon.png"],
     },
   };
 }
