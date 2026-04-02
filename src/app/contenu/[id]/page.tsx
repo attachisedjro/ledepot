@@ -123,17 +123,29 @@ export default function ContenuPage() {
               </h1>
             </div>
 
-            {/* CM */}
+            {/* Agence créative */}
+            {contenu.agence_creative && (
+              <div className="flex items-center gap-2 text-sm font-body text-on-surface-variant">
+                <span className="font-medium">Agence :</span>
+                <span>{contenu.agence_creative}</span>
+              </div>
+            )}
+
+            {/* Contributeur */}
             <div className="bg-surface-container p-4 rounded-2xl">
               <p className="text-xs font-label text-on-surface-variant mb-1">
                 Contributeur
               </p>
-              <Link
-                href={`/profil/${contenu.userId}`}
-                className="font-body font-medium text-on-surface hover:text-primary transition-colors"
-              >
-                {cm} →
-              </Link>
+              {contenu.anonyme ? (
+                <span className="font-body font-medium text-on-surface-variant">Anonyme</span>
+              ) : (
+                <Link
+                  href={`/profil/${contenu.userId}`}
+                  className="font-body font-medium text-on-surface hover:text-primary transition-colors"
+                >
+                  {cm} →
+                </Link>
+              )}
             </div>
 
             {/* Intention créative */}

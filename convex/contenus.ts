@@ -25,11 +25,11 @@ export const list = query({
     if (args.annee) contenus = contenus.filter((c) => c.annee === args.annee);
     if (args.type_contenu) contenus = contenus.filter((c) => c.type_contenu === args.type_contenu);
 
-    // Enrichir avec les infos du CM
+    // Enrichir avec les infos du contributeur
     return await Promise.all(
       contenus.map(async (c) => {
         const user = await ctx.db.get(c.userId);
-        return { ...c, cm: user ? `${user.prenom} ${user.nom}` : "Anonyme" };
+        return { ...c, cm: (c.anonyme || !user) ? "Anonyme" : `${user.prenom} ${user.nom}` };
       })
     );
   },
@@ -73,8 +73,10 @@ export const submit = mutation({
     annee: v.string(),
     lien_publication: v.string(),
     visuel_storage_id: v.optional(v.id("_storage")),
+    agence_creative: v.optional(v.string()),
     intention_creative: v.string(),
     type_contenu: v.optional(v.string()),
+    anonyme: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     let user = await ctx.db
@@ -110,8 +112,10 @@ export const submit = mutation({
       lien_publication: args.lien_publication,
       visuel_storage_id: args.visuel_storage_id,
       visuel_url,
+      agence_creative: args.agence_creative,
       intention_creative: args.intention_creative,
       type_contenu: args.type_contenu,
+      anonyme: args.anonyme ?? false,
       statut: "publie",
       vues: 0,
     });
@@ -123,6 +127,49 @@ export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
     return await ctx.storage.generateUploadUrl();
+  },
+});
+
+// Met à jour un contenu (par son propriétaire)
+export const updateContenu = mutation({
+  args: {
+    id: v.id("contenus"),
+    clerkId: v.string(),
+    titre: v.string(),
+    marque: v.string(),
+    agence_creative: v.optional(v.string()),
+    pays: v.string(),
+    secteur: v.string(),
+    occasion: v.string(),
+    format: v.string(),
+    annee: v.string(),
+    lien_publication: v.string(),
+    intention_creative: v.string(),
+    type_contenu: v.optional(v.string()),
+    anonyme: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const contenu = await ctx.db.get(args.id);
+    if (!contenu) throw new Error("Contenu introuvable");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+    if (!user || contenu.userId !== user._id) throw new Error("Non autorisé");
+    await ctx.db.patch(args.id, {
+      titre: args.titre,
+      marque: args.marque,
+      agence_creative: args.agence_creative,
+      pays: args.pays,
+      secteur: args.secteur,
+      occasion: args.occasion,
+      format: args.format,
+      annee: args.annee,
+      lien_publication: args.lien_publication,
+      intention_creative: args.intention_creative,
+      type_contenu: args.type_contenu,
+      anonyme: args.anonyme ?? false,
+    });
   },
 });
 

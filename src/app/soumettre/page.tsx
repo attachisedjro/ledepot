@@ -62,6 +62,7 @@ export default function SoumettreePage() {
   const [form, setForm] = useState({
     titre: "",
     marque: "",
+    agence_creative: "",
     pays: "",
     secteur: "",
     occasion: "",
@@ -72,6 +73,7 @@ export default function SoumettreePage() {
     type_contenu: "",
   });
   const [occasionLibre, setOccasionLibre] = useState("");
+  const [anonyme, setAnonyme] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -128,7 +130,9 @@ export default function SoumettreePage() {
         ...form,
         occasion: form.occasion === "Autre" ? occasionLibre.trim() : form.occasion,
         visuel_storage_id: storageId,
+        agence_creative: form.agence_creative || undefined,
         type_contenu: form.type_contenu || undefined,
+        anonyme,
       });
 
       router.push(`/contenu/${id}`);
@@ -161,8 +165,14 @@ export default function SoumettreePage() {
 
           {/* Marque */}
           <div>
-            <Label required>Marque / Organisation</Label>
+            <Label required>Annonceur / Marque</Label>
             <Input placeholder="Ex : SAFTIKING" value={form.marque} onChange={set("marque")} />
+          </div>
+
+          {/* Agence créative */}
+          <div>
+            <Label>Agence créative</Label>
+            <Input placeholder="Ex : DDB Africa (optionnel)" value={form.agence_creative} onChange={set("agence_creative")} />
           </div>
 
           {/* Grid 2 colonnes */}
@@ -258,14 +268,28 @@ export default function SoumettreePage() {
             <Label required>Intention créative</Label>
             <Textarea
               rows={4}
-              maxLength={500}
+              maxLength={700}
               placeholder="Décris le contexte, les objectifs et les choix créatifs de cette campagne..."
               value={form.intention_creative}
               onChange={set("intention_creative")}
             />
             <p className="text-xs font-body text-on-surface-variant mt-1 text-right">
-              {form.intention_creative.length}/500
+              {form.intention_creative.length}/700
             </p>
+          </div>
+
+          {/* Contribution anonyme */}
+          <div
+            className="flex items-start gap-3 bg-surface-container rounded-2xl px-4 py-4 cursor-pointer"
+            onClick={() => setAnonyme((v) => !v)}
+          >
+            <div className={`mt-0.5 w-5 h-5 rounded flex-shrink-0 border-2 flex items-center justify-center transition-colors ${anonyme ? "bg-primary border-primary" : "border-outline-variant"}`}>
+              {anonyme && <span className="text-white text-xs font-bold">✓</span>}
+            </div>
+            <div>
+              <p className="text-sm font-label font-medium text-on-surface">Soumettre de façon anonyme</p>
+              <p className="text-xs font-body text-on-surface-variant mt-0.5">Ton nom n&apos;apparaîtra pas sur cette campagne dans la galerie.</p>
+            </div>
           </div>
 
           {/* Erreur */}

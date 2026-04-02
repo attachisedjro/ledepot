@@ -57,6 +57,7 @@ export const updateProfile = mutation({
     clerkId: v.string(),
     nom: v.string(),
     prenom: v.string(),
+    poste: v.optional(v.string()),
     pays: v.optional(v.string()),
     bio: v.optional(v.string()),
     linkedin_url: v.optional(v.string()),
@@ -81,6 +82,7 @@ export const updateProfile = mutation({
     await ctx.db.patch(user._id, {
       nom: args.nom,
       prenom: args.prenom,
+      poste: args.poste,
       pays: args.pays,
       bio: args.bio,
       linkedin_url: args.linkedin_url,

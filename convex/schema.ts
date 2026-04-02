@@ -8,6 +8,7 @@ export default defineSchema({
     prenom: v.string(),
     pays: v.optional(v.string()),
     bio: v.optional(v.string()),
+    poste: v.optional(v.string()),
     linkedin_url: v.optional(v.string()),
     facebook_url: v.optional(v.string()),
     x_url: v.optional(v.string()),
@@ -28,8 +29,10 @@ export default defineSchema({
     lien_publication: v.string(),
     visuel_url: v.optional(v.string()),
     visuel_storage_id: v.optional(v.id("_storage")),
+    agence_creative: v.optional(v.string()),
     intention_creative: v.string(),
     type_contenu: v.optional(v.string()),
+    anonyme: v.optional(v.boolean()),
     statut: v.union(
       v.literal("publie"),
       v.literal("rejete"),

@@ -3,12 +3,19 @@
 import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
 
+import type { Id } from "../../../convex/_generated/dataModel";
+
 const PAYS = ["Bénin", "Côte d'Ivoire", "Sénégal", "Cameroun", "Togo", "Mali", "Burkina Faso", "Congo", "Autre"];
+const SECTEURS_LIST = ["Télécom", "Banque / Finance", "FMCG", "Mode / Beauté", "Restauration", "Médias", "ONG / Institutionnel", "iGaming", "Immobilier", "Santé / Pharmacie", "Éducation / EdTech", "Transport / Mobilité", "Énergie / Solaire", "Agriculture / Agro-industrie", "Assurance", "E-commerce / Marketplace", "Tech / Startups", "Autre"];
+const OCCASIONS_LIST = ["Saint-Valentin", "Fête des mères", "Fête des pères", "Fête nationale", "Rentrée scolaire", "Noël", "Lancement produit", "Ramadan", "Korité / Aïd el-Fitr", "Tabaski / Aïd el-Kébir", "Pâques", "Fête du travail", "Journée internationale des droits des femmes", "Journée internationale de la jeunesse", "Black Friday / Cyber Monday", "Journée mondiale de l'environnement", "Anniversaire de marque", "Autre"];
+const FORMATS_LIST = ["Image statique", "Carrousel", "Vidéo", "Reel", "Story", "Autre"];
+const ANNEES_LIST = ["2022", "2023", "2024", "2025", "2026"];
+const TYPES_LIST = ["Publication organique", "Campagne payante", "UGC", "Influenceur", "Activation terrain", "Autre"];
 
 export default function MonComptePage() {
   const { user } = useUser();
@@ -22,6 +29,7 @@ export default function MonComptePage() {
   const upsertUser = useMutation(api.users.upsertUser);
   const updateProfile = useMutation(api.users.updateProfile);
   const generateAvatarUploadUrl = useMutation(api.users.generateAvatarUploadUrl);
+  const updateContenu = useMutation(api.contenus.updateContenu);
 
   const contenus = useQuery(
     api.contenus.getByUser,
@@ -29,9 +37,12 @@ export default function MonComptePage() {
   );
 
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ nom: "", prenom: "", pays: "", bio: "", linkedin_url: "", facebook_url: "", x_url: "", instagram_url: "" });
+  const [form, setForm] = useState({ nom: "", prenom: "", poste: "", pays: "", bio: "", linkedin_url: "", facebook_url: "", x_url: "", instagram_url: "" });
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [editingId, setEditingId] = useState<Id<"contenus"> | null>(null);
+  const [editForm, setEditForm] = useState({ titre: "", marque: "", agence_creative: "", pays: "", secteur: "", occasion: "", format: "", annee: "", lien_publication: "", intention_creative: "", type_contenu: "", anonyme: false });
+  const [editSaving, setEditSaving] = useState(false);
 
   // Crée le profil si inexistant
   useEffect(() => {
@@ -50,6 +61,7 @@ export default function MonComptePage() {
       setForm({
         nom: userProfile.nom,
         prenom: userProfile.prenom,
+        poste: userProfile.poste ?? "",
         pays: userProfile.pays ?? "",
         bio: userProfile.bio ?? "",
         linkedin_url: userProfile.linkedin_url ?? "",
@@ -92,6 +104,47 @@ export default function MonComptePage() {
     }
   };
 
+  const startEditing = useCallback((c: { _id: Id<"contenus">; titre: string; marque: string; agence_creative?: string; pays: string; secteur: string; occasion: string; format: string; annee: string; lien_publication: string; intention_creative: string; type_contenu?: string; anonyme?: boolean }) => {
+    setEditingId(c._id);
+    setEditForm({
+      titre: c.titre,
+      marque: c.marque,
+      agence_creative: c.agence_creative ?? "",
+      pays: c.pays,
+      secteur: c.secteur,
+      occasion: c.occasion,
+      format: c.format,
+      annee: c.annee,
+      lien_publication: c.lien_publication,
+      intention_creative: c.intention_creative,
+      type_contenu: c.type_contenu ?? "",
+      anonyme: c.anonyme ?? false,
+    });
+  }, []);
+
+  const handleEditSave = async () => {
+    if (!user || !editingId) return;
+    setEditSaving(true);
+    await updateContenu({
+      id: editingId,
+      clerkId: user.id,
+      titre: editForm.titre,
+      marque: editForm.marque,
+      agence_creative: editForm.agence_creative || undefined,
+      pays: editForm.pays,
+      secteur: editForm.secteur,
+      occasion: editForm.occasion,
+      format: editForm.format,
+      annee: editForm.annee,
+      lien_publication: editForm.lien_publication,
+      intention_creative: editForm.intention_creative,
+      type_contenu: editForm.type_contenu || undefined,
+      anonyme: editForm.anonyme,
+    });
+    setEditSaving(false);
+    setEditingId(null);
+  };
+
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
@@ -101,6 +154,7 @@ export default function MonComptePage() {
       prenom: form.prenom,
       pays: form.pays || undefined,
       bio: form.bio || undefined,
+      poste: form.poste || undefined,
       linkedin_url: form.linkedin_url || undefined,
       facebook_url: form.facebook_url || undefined,
       x_url: form.x_url || undefined,
@@ -202,6 +256,12 @@ export default function MonComptePage() {
                     <option value="">Pays</option>
                     {PAYS.map((p) => <option key={p} value={p}>{p}</option>)}
                   </select>
+                  <input
+                    value={form.poste}
+                    onChange={(e) => setForm((f) => ({ ...f, poste: e.target.value }))}
+                    placeholder="Poste actuel (ex: Responsable communication)"
+                    className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
                   <textarea
                     value={form.bio}
                     onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
@@ -259,6 +319,9 @@ export default function MonComptePage() {
                   <h2 className="font-headline font-bold text-xl text-on-surface">
                     {userProfile?.prenom} {userProfile?.nom}
                   </h2>
+                  {userProfile?.poste && (
+                    <p className="text-xs font-label uppercase tracking-widest text-on-surface-variant mt-0.5">{userProfile.poste}</p>
+                  )}
                   {userProfile?.pays && (
                     <p className="text-xs font-body text-on-surface-variant mt-1">{userProfile.pays}</p>
                   )}
@@ -327,32 +390,90 @@ export default function MonComptePage() {
             ) : (
               <div className="space-y-4">
                 {contenus.map((c) => (
-                  <div key={c._id} className="bg-surface-container-lowest rounded-2xl p-4 shadow-card flex gap-4 items-start">
-                    <div className="w-16 h-16 rounded-xl bg-surface-container flex-shrink-0 relative overflow-hidden">
-                      {c.visuel_url ? (
-                        <Image src={c.visuel_url} alt={c.titre} fill className="object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-on-surface-variant/30 font-headline">{c.marque.charAt(0)}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <Link href={`/contenu/${c._id}`} className="font-headline font-bold text-base text-on-surface hover:text-primary transition-colors line-clamp-1">
-                          {c.titre}
-                        </Link>
-                        <span className={`text-xs font-label font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${
-                          c.statut === "publie" ? "bg-green-50 text-green-700" :
-                          c.statut === "masque" ? "bg-surface-container text-on-surface-variant" :
-                          "bg-error-container text-error"
-                        }`}>
-                          {statuts[c.statut]}
-                        </span>
+                  <div key={c._id} className="bg-surface-container-lowest rounded-2xl shadow-card overflow-hidden">
+                    <div className="p-4 flex gap-4 items-start">
+                      <div className="w-16 h-16 rounded-xl bg-surface-container flex-shrink-0 relative overflow-hidden">
+                        {c.visuel_url ? (
+                          <Image src={c.visuel_url} alt={c.titre} fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-on-surface-variant/30 font-headline">{c.marque.charAt(0)}</span>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-xs font-body text-on-surface-variant mt-1">{c.marque} · {c.pays} · {c.annee}</p>
-                      <p className="text-xs font-body text-on-surface-variant mt-1">{c.vues} vue{c.vues > 1 ? "s" : ""}</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <Link href={`/contenu/${c._id}`} className="font-headline font-bold text-base text-on-surface hover:text-primary transition-colors line-clamp-1">
+                            {c.titre}
+                          </Link>
+                          <span className={`text-xs font-label font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${
+                            c.statut === "publie" ? "bg-green-50 text-green-700" :
+                            c.statut === "masque" ? "bg-surface-container text-on-surface-variant" :
+                            "bg-error-container text-error"
+                          }`}>
+                            {statuts[c.statut]}
+                          </span>
+                        </div>
+                        <p className="text-xs font-body text-on-surface-variant mt-1">{c.marque} · {c.pays} · {c.annee}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <p className="text-xs font-body text-on-surface-variant">{c.vues} vue{c.vues > 1 ? "s" : ""}</p>
+                          {c.anonyme && <span className="text-xs font-label text-on-surface-variant/60 bg-surface-container px-2 py-0.5 rounded-full">Anonyme</span>}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => editingId === c._id ? setEditingId(null) : startEditing(c)}
+                        className="text-xs font-label font-medium bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-xl hover:bg-surface-container-high transition-colors flex-shrink-0"
+                      >
+                        {editingId === c._id ? "Fermer" : "Modifier"}
+                      </button>
                     </div>
+
+                    {/* Formulaire d'édition inline */}
+                    {editingId === c._id && (
+                      <div className="border-t border-outline-variant/20 px-4 pb-4 pt-4 space-y-3">
+                        <p className="text-xs font-label font-bold text-on-surface-variant uppercase tracking-wider mb-3">Modifier la soumission</p>
+                        <input value={editForm.titre} onChange={(e) => setEditForm(f => ({ ...f, titre: e.target.value }))} placeholder="Titre" className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                        <div className="grid grid-cols-2 gap-3">
+                          <input value={editForm.marque} onChange={(e) => setEditForm(f => ({ ...f, marque: e.target.value }))} placeholder="Annonceur / Marque" className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                          <input value={editForm.agence_creative} onChange={(e) => setEditForm(f => ({ ...f, agence_creative: e.target.value }))} placeholder="Agence créative (optionnel)" className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <select value={editForm.secteur} onChange={(e) => setEditForm(f => ({ ...f, secteur: e.target.value }))} className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
+                            {SECTEURS_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                          <select value={editForm.pays} onChange={(e) => setEditForm(f => ({ ...f, pays: e.target.value }))} className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
+                            {PAYS.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <select value={editForm.format} onChange={(e) => setEditForm(f => ({ ...f, format: e.target.value }))} className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
+                            {FORMATS_LIST.map(fmt => <option key={fmt} value={fmt}>{fmt}</option>)}
+                          </select>
+                          <select value={editForm.annee} onChange={(e) => setEditForm(f => ({ ...f, annee: e.target.value }))} className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
+                            {["2022","2023","2024","2025","2026"].map(a => <option key={a} value={a}>{a}</option>)}
+                          </select>
+                          <select value={editForm.occasion} onChange={(e) => setEditForm(f => ({ ...f, occasion: e.target.value }))} className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
+                            {OCCASIONS_LIST.map(o => <option key={o} value={o}>{o}</option>)}
+                          </select>
+                        </div>
+                        <input value={editForm.lien_publication} onChange={(e) => setEditForm(f => ({ ...f, lien_publication: e.target.value }))} placeholder="Lien de publication" type="url" className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                        <textarea value={editForm.intention_creative} onChange={(e) => setEditForm(f => ({ ...f, intention_creative: e.target.value }))} placeholder="Intention créative" rows={3} maxLength={700} className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
+                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setEditForm(f => ({ ...f, anonyme: !f.anonyme }))}>
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${editForm.anonyme ? "bg-primary border-primary" : "border-outline-variant"}`}>
+                            {editForm.anonyme && <span className="text-white text-xs">✓</span>}
+                          </div>
+                          <span className="text-xs font-body text-on-surface-variant">Contribution anonyme</span>
+                        </div>
+                        <div className="flex gap-2 pt-1">
+                          <button onClick={handleEditSave} disabled={editSaving} className="flex-1 btn-gradient text-white text-sm font-label font-medium py-2.5 rounded-xl disabled:opacity-60">
+                            {editSaving ? "..." : "Enregistrer"}
+                          </button>
+                          <button onClick={() => setEditingId(null)} className="px-4 bg-surface-container text-on-surface text-sm font-label rounded-xl">
+                            Annuler
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
