@@ -29,7 +29,7 @@ export default function MonComptePage() {
   );
 
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ nom: "", prenom: "", pays: "", bio: "", linkedin_url: "" });
+  const [form, setForm] = useState({ nom: "", prenom: "", pays: "", bio: "", linkedin_url: "", facebook_url: "", x_url: "", instagram_url: "" });
   const [saving, setSaving] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
@@ -53,6 +53,9 @@ export default function MonComptePage() {
         pays: userProfile.pays ?? "",
         bio: userProfile.bio ?? "",
         linkedin_url: userProfile.linkedin_url ?? "",
+        facebook_url: userProfile.facebook_url ?? "",
+        x_url: userProfile.x_url ?? "",
+        instagram_url: userProfile.instagram_url ?? "",
       });
     }
   }, [userProfile]);
@@ -79,6 +82,9 @@ export default function MonComptePage() {
         pays: userProfile?.pays,
         bio: userProfile?.bio,
         linkedin_url: userProfile?.linkedin_url,
+        facebook_url: userProfile?.facebook_url,
+        x_url: userProfile?.x_url,
+        instagram_url: userProfile?.instagram_url,
         avatar_storage_id: storageId,
       });
     } finally {
@@ -96,6 +102,9 @@ export default function MonComptePage() {
       pays: form.pays || undefined,
       bio: form.bio || undefined,
       linkedin_url: form.linkedin_url || undefined,
+      facebook_url: form.facebook_url || undefined,
+      x_url: form.x_url || undefined,
+      instagram_url: form.instagram_url || undefined,
     });
     setSaving(false);
     setEditing(false);
@@ -208,6 +217,27 @@ export default function MonComptePage() {
                     type="url"
                     className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
+                  <input
+                    value={form.facebook_url}
+                    onChange={(e) => setForm((f) => ({ ...f, facebook_url: e.target.value }))}
+                    placeholder="URL Facebook (optionnel)"
+                    type="url"
+                    className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <input
+                    value={form.x_url}
+                    onChange={(e) => setForm((f) => ({ ...f, x_url: e.target.value }))}
+                    placeholder="URL X / Twitter (optionnel)"
+                    type="url"
+                    className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  <input
+                    value={form.instagram_url}
+                    onChange={(e) => setForm((f) => ({ ...f, instagram_url: e.target.value }))}
+                    placeholder="URL Instagram (optionnel)"
+                    type="url"
+                    className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
                   <div className="flex gap-2 pt-1">
                     <button
                       onClick={handleSave}
@@ -235,11 +265,20 @@ export default function MonComptePage() {
                   {userProfile?.bio && (
                     <p className="text-sm font-body text-on-surface mt-3 leading-relaxed">{userProfile.bio}</p>
                   )}
-                  {userProfile?.linkedin_url && (
-                    <a href={userProfile.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-xs font-label text-primary mt-2 block hover:opacity-75">
-                      LinkedIn →
-                    </a>
-                  )}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {userProfile?.linkedin_url && (
+                      <a href={userProfile.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-xs font-label text-primary hover:opacity-75">LinkedIn</a>
+                    )}
+                    {userProfile?.facebook_url && (
+                      <a href={userProfile.facebook_url} target="_blank" rel="noopener noreferrer" className="text-xs font-label text-primary hover:opacity-75">Facebook</a>
+                    )}
+                    {userProfile?.x_url && (
+                      <a href={userProfile.x_url} target="_blank" rel="noopener noreferrer" className="text-xs font-label text-primary hover:opacity-75">X</a>
+                    )}
+                    {userProfile?.instagram_url && (
+                      <a href={userProfile.instagram_url} target="_blank" rel="noopener noreferrer" className="text-xs font-label text-primary hover:opacity-75">Instagram</a>
+                    )}
+                  </div>
                   <button
                     onClick={() => setEditing(true)}
                     className="mt-4 w-full bg-surface-container text-sm font-label font-medium text-on-surface py-2.5 rounded-xl hover:bg-surface-container-high transition-colors"

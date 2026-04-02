@@ -60,6 +60,9 @@ export const updateProfile = mutation({
     pays: v.optional(v.string()),
     bio: v.optional(v.string()),
     linkedin_url: v.optional(v.string()),
+    facebook_url: v.optional(v.string()),
+    x_url: v.optional(v.string()),
+    instagram_url: v.optional(v.string()),
     avatar_storage_id: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
@@ -81,6 +84,9 @@ export const updateProfile = mutation({
       pays: args.pays,
       bio: args.bio,
       linkedin_url: args.linkedin_url,
+      facebook_url: args.facebook_url,
+      x_url: args.x_url,
+      instagram_url: args.instagram_url,
       avatar_storage_id: args.avatar_storage_id ?? user.avatar_storage_id,
       avatar_url,
     });

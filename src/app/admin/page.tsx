@@ -238,7 +238,7 @@ export default function AdminPage() {
 
   const [filtreStatut, setFiltreStatut] = useState<Statut>("tous");
   const [tri, setTri] = useState<Tri>("recent");
-  const [section, setSection] = useState<"overview" | "moderation">("overview");
+  const [section, setSection] = useState<"overview" | "moderation" | "membres">("overview");
   const [showExport, setShowExport] = useState(false);
 
   const tousLesContenus = useQuery(api.contenus.listAll, {});
@@ -355,6 +355,12 @@ export default function AdminPage() {
                 className={`text-sm font-label font-medium px-4 py-2 rounded-lg transition-colors ${section === "moderation" ? "bg-surface text-on-surface shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
               >
                 Modération {masqués.length > 0 && <span className="ml-1 bg-error text-white text-xs px-1.5 py-0.5 rounded-full">{masqués.length}</span>}
+              </button>
+              <button
+                onClick={() => setSection("membres")}
+                className={`text-sm font-label font-medium px-4 py-2 rounded-lg transition-colors ${section === "membres" ? "bg-surface text-on-surface shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+              >
+                Membres ({nbCMs})
               </button>
             </div>
           </div>
@@ -496,6 +502,70 @@ export default function AdminPage() {
             </div>
           </>
         )}
+
+        {section === "membres" && (() => {
+          const users = tousLesUsers ?? [];
+          // Campagne count per userId
+          const campagnesParUser = new Map<string, number>();
+          for (const c of contenus) {
+            campagnesParUser.set(c.userId, (campagnesParUser.get(c.userId) ?? 0) + 1);
+          }
+          const sansCompagne = users.filter((u) => (campagnesParUser.get(u._id) ?? 0) === 0);
+          return (
+            <>
+              {sansCompagne.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 mb-6 flex items-center gap-3">
+                  <span className="text-amber-600 text-lg">!</span>
+                  <p className="text-sm font-body text-amber-800">
+                    <span className="font-medium">{sansCompagne.length} membre{sansCompagne.length > 1 ? "s" : ""}</span> inscrit{sansCompagne.length > 1 ? "s" : ""} sans campagne — à relancer.
+                  </p>
+                </div>
+              )}
+              <div className="bg-surface-container-lowest rounded-2xl shadow-card overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-outline-variant/20">
+                      <th className="text-left text-xs font-label text-on-surface-variant px-4 py-3">Membre</th>
+                      <th className="text-left text-xs font-label text-on-surface-variant px-4 py-3">Pays</th>
+                      <th className="text-left text-xs font-label text-on-surface-variant px-4 py-3">Inscription</th>
+                      <th className="text-right text-xs font-label text-on-surface-variant px-4 py-3">Campagnes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users
+                      .slice()
+                      .sort((a, b) => b._creationTime - a._creationTime)
+                      .map((u) => {
+                        const nbCampagnes = campagnesParUser.get(u._id) ?? 0;
+                        return (
+                          <tr key={u._id} className={`border-b border-outline-variant/10 last:border-0 transition-colors ${nbCampagnes === 0 ? "bg-amber-50/50" : "hover:bg-surface-container/50"}`}>
+                            <td className="px-4 py-3">
+                              <Link href={`/profil/${u._id}`} className="font-body font-medium text-sm text-on-surface hover:text-primary transition-colors">
+                                {u.prenom} {u.nom}
+                              </Link>
+                              {nbCampagnes === 0 && (
+                                <span className="ml-2 text-xs font-label text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">à relancer</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-xs font-body text-on-surface-variant">{u.pays ?? "—"}</td>
+                            <td className="px-4 py-3 text-xs font-body text-on-surface-variant">
+                              {new Date(u._creationTime).toLocaleDateString("fr", { day: "numeric", month: "short", year: "numeric" })}
+                            </td>
+                            <td className={`px-4 py-3 text-right text-sm font-label font-bold ${nbCampagnes === 0 ? "text-on-surface-variant" : "text-on-surface"}`}>
+                              {nbCampagnes}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+                {users.length === 0 && (
+                  <p className="text-sm font-body text-on-surface-variant text-center py-12">Aucun membre inscrit.</p>
+                )}
+              </div>
+            </>
+          );
+        })()}
 
         {section === "moderation" && (
           <>
