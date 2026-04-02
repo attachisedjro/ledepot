@@ -125,6 +125,18 @@ export default function ProfilPage() {
                 )}
               </div>
 
+              {/* Badge */}
+              {(() => {
+                const badge = getBadge(allPublies.length);
+                return badge ? (
+                  <div className="mt-3 flex justify-center">
+                    <span className={`text-xs font-label font-medium px-3 py-1 rounded-full ${badge.style}`}>
+                      {badge.label}
+                    </span>
+                  </div>
+                ) : null;
+              })()}
+
               {/* Réseaux sociaux */}
               {hasSocial && (
                 <div className="flex justify-center gap-2 mt-4 pt-4 border-t border-outline-variant/20">
@@ -263,6 +275,13 @@ export default function ProfilPage() {
       <Footer />
     </div>
   );
+}
+
+function getBadge(nb: number): { label: string; style: string } | null {
+  if (nb >= 10) return { label: "Expert", style: "bg-amber-100 text-amber-800" };
+  if (nb >= 3) return { label: "Contributeur", style: "bg-primary/10 text-primary" };
+  if (nb >= 1) return { label: "Débutant", style: "bg-surface-container text-on-surface-variant" };
+  return null;
 }
 
 function FilterRow({

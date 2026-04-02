@@ -17,6 +17,10 @@ export default function ContenuPage() {
   const { isSignedIn, user } = useUser();
 
   const contenu = useQuery(api.contenus.getById, { id });
+  const similaires = useQuery(
+    api.contenus.list,
+    contenu ? { secteur: contenu.secteur } : "skip"
+  );
   const incrementerVues = useMutation(api.contenus.incrementerVues);
   const toggleLike = useMutation(api.likes.toggleLike);
   const liked = useQuery(
@@ -214,6 +218,37 @@ export default function ContenuPage() {
             </a>
           </div>
         </div>
+
+        {/* Campagnes similaires */}
+        {similaires && similaires.filter(c => c._id !== id).length > 0 && (
+          <div className="mt-16 pt-12 border-t border-outline-variant/20">
+            <h2 className="font-headline font-bold text-2xl text-on-surface mb-6">Dans le même secteur</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {similaires
+                .filter(c => c._id !== id)
+                .slice(0, 3)
+                .map(c => (
+                  <Link key={c._id} href={`/contenu/${c._id}`}>
+                    <article className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-card hover:shadow-ambient transition-all hover:-translate-y-0.5 group cursor-pointer">
+                      <div className="w-full aspect-[4/5] bg-surface-container relative overflow-hidden">
+                        {c.visuel_url ? (
+                          <Image src={c.visuel_url} alt={c.titre} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-on-surface-variant/20 font-headline text-4xl">{c.marque.charAt(0)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <p className="text-xs font-label text-on-surface-variant mb-1 truncate">{c.marque} · {c.pays}</p>
+                        <h3 className="font-headline font-bold text-base text-on-surface group-hover:text-primary transition-colors line-clamp-2">{c.titre}</h3>
+                      </div>
+                    </article>
+                  </Link>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <Footer />

@@ -25,6 +25,9 @@ export default function Navbar() {
           >
             Galerie
           </Link>
+          <Link href="/tendances" className="text-sm font-body font-medium text-on-surface-variant hover:text-on-surface transition-colors">
+            Tendances
+          </Link>
           {isSignedIn && (
             <Link
               href="/mon-compte"
@@ -86,6 +89,9 @@ export default function Navbar() {
             onClick={() => setMenuOpen(false)}
           >
             Galerie
+          </Link>
+          <Link href="/tendances" className="text-sm font-body text-on-surface-variant" onClick={() => setMenuOpen(false)}>
+            Tendances
           </Link>
           {isSignedIn ? (
             <>

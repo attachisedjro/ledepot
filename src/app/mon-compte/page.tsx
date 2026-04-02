@@ -15,6 +15,13 @@ const SECTEURS_LIST = ["Télécom", "Banque / Finance", "FMCG", "Mode / Beauté"
 const OCCASIONS_LIST = ["Saint-Valentin", "Fête des mères", "Fête des pères", "Fête nationale", "Rentrée scolaire", "Noël", "Lancement produit", "Ramadan", "Korité / Aïd el-Fitr", "Tabaski / Aïd el-Kébir", "Pâques", "Fête du travail", "Journée internationale des droits des femmes", "Journée internationale de la jeunesse", "Black Friday / Cyber Monday", "Journée mondiale de l'environnement", "Anniversaire de marque", "Autre"];
 const FORMATS_LIST = ["Image statique", "Carrousel", "Vidéo", "Reel", "Story", "Autre"];
 
+function getBadge(nb: number): { label: string; style: string } | null {
+  if (nb >= 10) return { label: "Expert", style: "bg-amber-100 text-amber-800" };
+  if (nb >= 3) return { label: "Contributeur", style: "bg-primary/10 text-primary" };
+  if (nb >= 1) return { label: "Débutant", style: "bg-surface-container text-on-surface-variant" };
+  return null;
+}
+
 export default function MonComptePage() {
   const { user } = useUser();
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -332,6 +339,17 @@ export default function MonComptePage() {
                   {userProfile?.pays && (
                     <p className="text-xs font-body text-on-surface-variant mt-1">{userProfile.pays}</p>
                   )}
+                  {(() => {
+                    const publishedCount = contenus?.filter(c => c.statut === "publie").length ?? 0;
+                    const badge = getBadge(publishedCount);
+                    return badge ? (
+                      <div className="mt-2">
+                        <span className={`text-xs font-label font-medium px-3 py-1 rounded-full ${badge.style}`}>
+                          {badge.label}
+                        </span>
+                      </div>
+                    ) : null;
+                  })()}
                   {userProfile?.bio && (
                     <p className="text-sm font-body text-on-surface mt-3 leading-relaxed">{userProfile.bio}</p>
                   )}
@@ -368,9 +386,19 @@ export default function MonComptePage() {
             </div>
 
             {/* Stats */}
-            <div className="bg-surface-container p-4 rounded-2xl text-center">
-              <p className="font-headline font-bold text-3xl text-on-surface">{contenus?.filter(c => c.statut === "publie").length ?? 0}</p>
-              <p className="text-xs font-label text-on-surface-variant mt-1">campagne{(contenus?.filter(c => c.statut === "publie").length ?? 0) > 1 ? "s" : ""} publiée{(contenus?.filter(c => c.statut === "publie").length ?? 0) > 1 ? "s" : ""}</p>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-surface-container p-3 rounded-2xl text-center">
+                <p className="font-headline font-bold text-2xl text-on-surface">{contenus?.filter(c => c.statut === "publie").length ?? 0}</p>
+                <p className="text-xs font-label text-on-surface-variant mt-1">publiée{(contenus?.filter(c => c.statut === "publie").length ?? 0) > 1 ? "s" : ""}</p>
+              </div>
+              <div className="bg-surface-container p-3 rounded-2xl text-center">
+                <p className="font-headline font-bold text-2xl text-on-surface">{contenus?.reduce((s, c) => s + c.vues, 0).toLocaleString("fr") ?? 0}</p>
+                <p className="text-xs font-label text-on-surface-variant mt-1">vues</p>
+              </div>
+              <div className="bg-surface-container p-3 rounded-2xl text-center">
+                <p className="font-headline font-bold text-2xl text-rose-500">♥ {contenus?.reduce((s, c) => s + (c.likes ?? 0), 0) ?? 0}</p>
+                <p className="text-xs font-label text-on-surface-variant mt-1">likes</p>
+              </div>
             </div>
 
             <Link
@@ -423,7 +451,8 @@ export default function MonComptePage() {
                         </div>
                         <p className="text-xs font-body text-on-surface-variant mt-1">{c.marque} · {c.pays} · {c.annee}</p>
                         <div className="flex items-center gap-3 mt-1">
-                          <p className="text-xs font-body text-on-surface-variant">{c.vues} vue{c.vues > 1 ? "s" : ""}</p>
+                          <span className="text-xs font-body text-on-surface-variant">👁 {c.vues.toLocaleString("fr")}</span>
+                          {(c.likes ?? 0) > 0 && <span className="text-xs font-body text-rose-400">♥ {c.likes}</span>}
                           {c.anonyme && <span className="text-xs font-label text-on-surface-variant/60 bg-surface-container px-2 py-0.5 rounded-full">Anonyme</span>}
                         </div>
                       </div>

@@ -65,6 +65,7 @@ export default function GaleriePage() {
     pays: "", secteur: "", occasion: "", format: "", annee: "", type_contenu: "",
   });
   const [triLikes, setTriLikes] = useState(false);
+  const [recherche, setRecherche] = useState("");
 
   const contenus = useQuery(api.contenus.list, {
     pays: filtres.pays || undefined,
@@ -78,21 +79,32 @@ export default function GaleriePage() {
   const setFiltre = (key: keyof typeof filtres) => (val: string) =>
     setFiltres((f) => ({ ...f, [key]: val }));
 
-  const hasFilters = Object.values(filtres).some(Boolean) || triLikes;
+  const hasFilters = Object.values(filtres).some(Boolean) || triLikes || !!recherche.trim();
 
   let sortedContenus = contenus;
   if (contenus && triLikes) {
     sortedContenus = [...contenus].sort((a, b) => (b.likes ?? 0) - (a.likes ?? 0));
   }
 
+  let filteredContenus = sortedContenus;
+  if (sortedContenus && recherche.trim()) {
+    const q = recherche.toLowerCase();
+    filteredContenus = sortedContenus.filter(c =>
+      c.titre.toLowerCase().includes(q) ||
+      c.marque.toLowerCase().includes(q) ||
+      c.intention_creative.toLowerCase().includes(q)
+    );
+  }
+
   // Les visiteurs voient seulement les 6 premiers
-  const visibleContenus = sortedContenus
-    ? isSignedIn ? sortedContenus : sortedContenus.slice(0, LIMIT_VISITEUR)
+  const visibleContenus = filteredContenus
+    ? isSignedIn ? filteredContenus : filteredContenus.slice(0, LIMIT_VISITEUR)
     : undefined;
 
   const totalContenus = contenus?.length ?? 0;
-  const contenusCaches = !isSignedIn && totalContenus > LIMIT_VISITEUR
-    ? totalContenus - LIMIT_VISITEUR
+  const filteredTotal = filteredContenus?.length ?? 0;
+  const contenusCaches = !isSignedIn && filteredTotal > LIMIT_VISITEUR
+    ? filteredTotal - LIMIT_VISITEUR
     : 0;
 
   return (
@@ -108,6 +120,21 @@ export default function GaleriePage() {
           <p className="font-body text-on-surface-variant">
             {totalContenus} campagne{totalContenus > 1 ? "s" : ""} publiée{totalContenus > 1 ? "s" : ""}
           </p>
+        </div>
+
+        {/* Recherche */}
+        <div className="relative mb-6">
+          <input
+            type="text"
+            value={recherche}
+            onChange={(e) => setRecherche(e.target.value)}
+            placeholder="Rechercher une campagne, une marque..."
+            className="w-full bg-surface-container text-sm font-body text-on-surface px-4 py-3 pl-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-on-surface-variant/50"
+          />
+          <svg className="absolute left-3 top-3.5 w-4 h-4 text-on-surface-variant/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          {recherche && (
+            <button onClick={() => setRecherche("")} className="absolute right-3 top-3.5 text-on-surface-variant/50 hover:text-on-surface">×</button>
+          )}
         </div>
 
         {/* Filtres */}
@@ -135,6 +162,7 @@ export default function GaleriePage() {
               onClick={() => {
                 setFiltres({ pays: "", secteur: "", occasion: "", format: "", annee: "", type_contenu: "" });
                 setTriLikes(false);
+                setRecherche("");
               }}
               className="text-sm font-label font-medium text-primary hover:opacity-75 transition-opacity px-3 py-2"
             >
