@@ -14,8 +14,6 @@ const PAYS = ["Bénin", "Côte d'Ivoire", "Sénégal", "Cameroun", "Togo", "Mali
 const SECTEURS_LIST = ["Télécom", "Banque / Finance", "FMCG", "Mode / Beauté", "Restauration", "Médias", "ONG / Institutionnel", "iGaming", "Immobilier", "Santé / Pharmacie", "Éducation / EdTech", "Transport / Mobilité", "Énergie / Solaire", "Agriculture / Agro-industrie", "Assurance", "E-commerce / Marketplace", "Tech / Startups", "Autre"];
 const OCCASIONS_LIST = ["Saint-Valentin", "Fête des mères", "Fête des pères", "Fête nationale", "Rentrée scolaire", "Noël", "Lancement produit", "Ramadan", "Korité / Aïd el-Fitr", "Tabaski / Aïd el-Kébir", "Pâques", "Fête du travail", "Journée internationale des droits des femmes", "Journée internationale de la jeunesse", "Black Friday / Cyber Monday", "Journée mondiale de l'environnement", "Anniversaire de marque", "Autre"];
 const FORMATS_LIST = ["Image statique", "Carrousel", "Vidéo", "Reel", "Story", "Autre"];
-const ANNEES_LIST = ["2022", "2023", "2024", "2025", "2026"];
-const TYPES_LIST = ["Publication organique", "Campagne payante", "UGC", "Influenceur", "Activation terrain", "Autre"];
 
 export default function MonComptePage() {
   const { user } = useUser();
