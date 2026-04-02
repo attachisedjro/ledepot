@@ -42,14 +42,22 @@ export default function MonComptePage() {
   const [editForm, setEditForm] = useState({ titre: "", marque: "", agence_creative: "", pays: "", secteur: "", occasion: "", format: "", annee: "", lien_publication: "", intention_creative: "", type_contenu: "", anonyme: false });
   const [editSaving, setEditSaving] = useState(false);
 
-  // Crée le profil si inexistant
+  // Crée le profil si inexistant, ou met à jour l'email si manquant
   useEffect(() => {
-    if (user && userProfile === null) {
+    if (!user || userProfile === undefined) return;
+    if (userProfile === null) {
       upsertUser({
         clerkId: user.id,
         nom: user.lastName ?? "",
         prenom: user.firstName ?? "",
         email: user.primaryEmailAddress?.emailAddress,
+      });
+    } else if (!userProfile.email && user.primaryEmailAddress?.emailAddress) {
+      upsertUser({
+        clerkId: user.id,
+        nom: userProfile.nom,
+        prenom: userProfile.prenom,
+        email: user.primaryEmailAddress.emailAddress,
       });
     }
   }, [user, userProfile, upsertUser]);
