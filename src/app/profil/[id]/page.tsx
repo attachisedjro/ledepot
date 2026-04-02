@@ -26,8 +26,8 @@ export default function ProfilPage() {
     return (
       <div className="min-h-screen bg-surface">
         <Navbar />
-        <div className="pt-32 px-6 max-w-6xl mx-auto animate-pulse flex gap-8">
-          <div className="w-72 flex-shrink-0 space-y-4">
+        <div className="pt-32 px-6 max-w-6xl mx-auto animate-pulse flex flex-col md:flex-row gap-8">
+          <div className="w-full md:w-72 md:flex-shrink-0 space-y-4">
             <div className="h-80 bg-surface-container rounded-2xl" />
             <div className="h-48 bg-surface-container rounded-2xl" />
           </div>
@@ -76,10 +76,10 @@ export default function ProfilPage() {
       <Navbar />
 
       <div className="pt-20 pb-16 px-6 max-w-6xl mx-auto">
-        <div className="flex gap-8 items-start">
+        <div className="flex flex-col md:flex-row gap-8 items-start">
 
           {/* ── SIDEBAR GAUCHE ── */}
-          <div className="w-64 flex-shrink-0 sticky top-24 space-y-4">
+          <div className="w-full md:w-64 md:flex-shrink-0 md:sticky md:top-24 space-y-4">
 
             {/* Carte profil */}
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-card text-center">
