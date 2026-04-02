@@ -7,6 +7,7 @@ export const upsertUser = mutation({
     clerkId: v.string(),
     nom: v.string(),
     prenom: v.string(),
+    email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -14,10 +15,17 @@ export const upsertUser = mutation({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
       .unique();
 
-    if (existing) return existing._id;
+    if (existing) {
+      // Met à jour l'email si pas encore renseigné
+      if (args.email && !existing.email) {
+        await ctx.db.patch(existing._id, { email: args.email });
+      }
+      return existing._id;
+    }
 
     return await ctx.db.insert("users", {
       clerkId: args.clerkId,
+      email: args.email,
       nom: args.nom,
       prenom: args.prenom,
     });

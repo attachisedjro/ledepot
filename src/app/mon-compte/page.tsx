@@ -49,6 +49,7 @@ export default function MonComptePage() {
         clerkId: user.id,
         nom: user.lastName ?? "",
         prenom: user.firstName ?? "",
+        email: user.primaryEmailAddress?.emailAddress,
       });
     }
   }, [user, userProfile, upsertUser]);

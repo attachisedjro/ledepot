@@ -505,30 +505,56 @@ export default function AdminPage() {
 
         {section === "membres" && (() => {
           const users = tousLesUsers ?? [];
-          // Campagne count per userId
+          const now = Date.now();
+          const CINQ_JOURS = 5 * 24 * 60 * 60 * 1000;
+
           const campagnesParUser = new Map<string, number>();
           for (const c of contenus) {
             campagnesParUser.set(c.userId, (campagnesParUser.get(c.userId) ?? 0) + 1);
           }
-          const sansCompagne = users.filter((u) => (campagnesParUser.get(u._id) ?? 0) === 0);
+
+          const getStatut = (u: { _creationTime: number; _id: string }) => {
+            const nb = campagnesParUser.get(u._id) ?? 0;
+            if (nb > 0) return "actif";
+            if (now - u._creationTime <= CINQ_JOURS) return "relancer";
+            return "inactif";
+          };
+
+          const nbRelancer = users.filter((u) => getStatut(u) === "relancer").length;
+          const nbInactif = users.filter((u) => getStatut(u) === "inactif").length;
+
+          const statutBadge: Record<string, string> = {
+            actif: "bg-green-50 text-green-700",
+            relancer: "bg-amber-100 text-amber-700",
+            inactif: "bg-surface-container text-on-surface-variant",
+          };
+          const statutLabel: Record<string, string> = {
+            actif: "Actif",
+            relancer: "À relancer",
+            inactif: "Inactif",
+          };
+
           return (
             <>
-              {sansCompagne.length > 0 && (
+              {(nbRelancer > 0 || nbInactif > 0) && (
                 <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 mb-6 flex items-center gap-3">
                   <span className="text-amber-600 text-lg">!</span>
                   <p className="text-sm font-body text-amber-800">
-                    <span className="font-medium">{sansCompagne.length} membre{sansCompagne.length > 1 ? "s" : ""}</span> inscrit{sansCompagne.length > 1 ? "s" : ""} sans campagne — à relancer.
+                    {nbRelancer > 0 && <><span className="font-medium">{nbRelancer} nouveau{nbRelancer > 1 ? "x" : ""}</span> à relancer · </>}
+                    {nbInactif > 0 && <><span className="font-medium">{nbInactif}</span> inactif{nbInactif > 1 ? "s" : ""} (plus de 5 jours sans campagne)</>}
                   </p>
                 </div>
               )}
-              <div className="bg-surface-container-lowest rounded-2xl shadow-card overflow-hidden">
-                <table className="w-full">
+              <div className="bg-surface-container-lowest rounded-2xl shadow-card overflow-x-auto">
+                <table className="w-full min-w-[700px]">
                   <thead>
                     <tr className="border-b border-outline-variant/20">
-                      <th className="text-left text-xs font-label text-on-surface-variant px-4 py-3">Membre</th>
+                      <th className="text-left text-xs font-label text-on-surface-variant px-4 py-3">Nom & Prénom</th>
+                      <th className="text-left text-xs font-label text-on-surface-variant px-4 py-3">Email</th>
                       <th className="text-left text-xs font-label text-on-surface-variant px-4 py-3">Pays</th>
                       <th className="text-left text-xs font-label text-on-surface-variant px-4 py-3">Inscription</th>
                       <th className="text-right text-xs font-label text-on-surface-variant px-4 py-3">Campagnes</th>
+                      <th className="text-right text-xs font-label text-on-surface-variant px-4 py-3">Statut</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -536,23 +562,26 @@ export default function AdminPage() {
                       .slice()
                       .sort((a, b) => b._creationTime - a._creationTime)
                       .map((u) => {
-                        const nbCampagnes = campagnesParUser.get(u._id) ?? 0;
+                        const nb = campagnesParUser.get(u._id) ?? 0;
+                        const statut = getStatut(u);
+                        const nomComplet = [u.prenom, u.nom].filter(Boolean).join(" ") || "—";
                         return (
-                          <tr key={u._id} className={`border-b border-outline-variant/10 last:border-0 transition-colors ${nbCampagnes === 0 ? "bg-amber-50/50" : "hover:bg-surface-container/50"}`}>
+                          <tr key={u._id} className="border-b border-outline-variant/10 last:border-0 hover:bg-surface-container/30 transition-colors">
                             <td className="px-4 py-3">
                               <Link href={`/profil/${u._id}`} className="font-body font-medium text-sm text-on-surface hover:text-primary transition-colors">
-                                {u.prenom} {u.nom}
+                                {nomComplet}
                               </Link>
-                              {nbCampagnes === 0 && (
-                                <span className="ml-2 text-xs font-label text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">à relancer</span>
-                              )}
                             </td>
+                            <td className="px-4 py-3 text-xs font-body text-on-surface-variant">{u.email ?? "—"}</td>
                             <td className="px-4 py-3 text-xs font-body text-on-surface-variant">{u.pays ?? "—"}</td>
-                            <td className="px-4 py-3 text-xs font-body text-on-surface-variant">
+                            <td className="px-4 py-3 text-xs font-body text-on-surface-variant whitespace-nowrap">
                               {new Date(u._creationTime).toLocaleDateString("fr", { day: "numeric", month: "short", year: "numeric" })}
                             </td>
-                            <td className={`px-4 py-3 text-right text-sm font-label font-bold ${nbCampagnes === 0 ? "text-on-surface-variant" : "text-on-surface"}`}>
-                              {nbCampagnes}
+                            <td className="px-4 py-3 text-right text-sm font-label font-bold text-on-surface">{nb}</td>
+                            <td className="px-4 py-3 text-right">
+                              <span className={`text-xs font-label font-medium px-2 py-0.5 rounded-full ${statutBadge[statut]}`}>
+                                {statutLabel[statut]}
+                              </span>
                             </td>
                           </tr>
                         );
