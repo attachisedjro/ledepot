@@ -277,9 +277,9 @@ export default function ProfilClient() {
 }
 
 function getBadge(nb: number): { label: string; style: string } | null {
-  if (nb >= 10) return { label: "Expert", style: "bg-amber-100 text-amber-800" };
-  if (nb >= 3) return { label: "Contributeur", style: "bg-primary/10 text-primary" };
-  if (nb >= 1) return { label: "Débutant", style: "bg-surface-container text-on-surface-variant" };
+  if (nb >= 10) return { label: "⭐⭐⭐ Expert", style: "bg-amber-100 text-amber-800" };
+  if (nb >= 3) return { label: "⭐⭐ Contributeur", style: "bg-primary/10 text-primary" };
+  if (nb >= 1) return { label: "⭐ Nouveau", style: "bg-surface-container text-on-surface-variant" };
   return null;
 }
 
