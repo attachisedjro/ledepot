@@ -1,5 +1,15 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+
+export function generateSlug(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 // Liste tous les contenus publiés avec filtres optionnels
 export const list = query({
@@ -43,6 +53,28 @@ export const getById = query({
     if (!contenu) return null;
     const user = await ctx.db.get(contenu.userId);
     return { ...contenu, user };
+  },
+});
+
+// Récupère un contenu par slug ou id Convex (rétrocompat)
+export const getByIdOrSlug = query({
+  args: { idOrSlug: v.string() },
+  handler: async (ctx, args) => {
+    // Les slugs contiennent toujours un tiret, les IDs Convex jamais
+    if (args.idOrSlug.includes("-")) {
+      const contenu = await ctx.db
+        .query("contenus")
+        .withIndex("by_slug", (q) => q.eq("slug", args.idOrSlug))
+        .first();
+      if (!contenu) return null;
+      const user = await ctx.db.get(contenu.userId);
+      return { ...contenu, user };
+    } else {
+      const contenu = await ctx.db.get(args.idOrSlug as Id<"contenus">);
+      if (!contenu) return null;
+      const user = await ctx.db.get(contenu.userId);
+      return { ...contenu, user };
+    }
   },
 });
 
@@ -100,6 +132,20 @@ export const submit = mutation({
       visuel_url = (await ctx.storage.getUrl(args.visuel_storage_id)) ?? undefined;
     }
 
+    // Générer un slug unique
+    const baseSlug = generateSlug(`${args.marque}-${args.titre}`);
+    let slug = baseSlug;
+    let counter = 2;
+    while (true) {
+      const existing = await ctx.db
+        .query("contenus")
+        .withIndex("by_slug", (q) => q.eq("slug", slug))
+        .first();
+      if (!existing) break;
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+
     return await ctx.db.insert("contenus", {
       userId: user._id,
       titre: args.titre,
@@ -118,6 +164,7 @@ export const submit = mutation({
       anonyme: args.anonyme ?? false,
       statut: "publie",
       vues: 0,
+      slug,
     });
   },
 });
@@ -208,6 +255,34 @@ export const supprimer = mutation({
   args: { id: v.id("contenus") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.id);
+  },
+});
+
+// Admin — backfill slugs pour les contenus existants
+export const backfillSlugs = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const contenus = await ctx.db.query("contenus").collect();
+    let count = 0;
+    for (const c of contenus) {
+      if (!c.slug) {
+        const baseSlug = generateSlug(`${c.marque}-${c.titre}`);
+        let slug = baseSlug;
+        let counter = 2;
+        while (true) {
+          const existing = await ctx.db
+            .query("contenus")
+            .withIndex("by_slug", (q) => q.eq("slug", slug))
+            .first();
+          if (!existing || existing._id === c._id) break;
+          slug = `${baseSlug}-${counter}`;
+          counter++;
+        }
+        await ctx.db.patch(c._id, { slug });
+        count++;
+      }
+    }
+    return { updated: count };
   },
 });
 

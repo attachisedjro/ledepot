@@ -77,7 +77,7 @@ export default function TendancesPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {liste.map((c, i) => (
-              <Link key={c._id} href={`/contenu/${c._id}`}>
+              <Link key={c._id} href={`/contenu/${c.slug ?? c._id}`}>
                 <article className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-card hover:shadow-ambient transition-all hover:-translate-y-0.5 group cursor-pointer relative">
                   {i < 3 && (
                     <div className="absolute top-3 right-3 z-10 w-7 h-7 bg-primary text-on-primary font-headline font-bold text-sm rounded-full flex items-center justify-center shadow">

@@ -262,6 +262,9 @@ export default function AdminPage() {
   const masquer = useMutation(api.contenus.masquer);
   const republier = useMutation(api.contenus.republier);
   const supprimer = useMutation(api.contenus.supprimer);
+  const backfillSlugs = useMutation(api.contenus.backfillSlugs);
+  const backfillUserSlugs = useMutation(api.users.backfillUserSlugs);
+  const [backfillMsg, setBackfillMsg] = useState("");
 
   if (!user) return null;
 
@@ -478,6 +481,33 @@ export default function AdminPage() {
                   ))}
                 </div>
               </div>
+            </div>
+
+            {/* Outils maintenance */}
+            <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-card">
+              <h2 className="font-headline font-bold text-lg text-on-surface mb-1">Maintenance — Slugs URL</h2>
+              <p className="text-xs font-body text-on-surface-variant mb-4">À lancer une seule fois pour générer les URLs lisibles des campagnes et profils existants.</p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={async () => {
+                    const res = await backfillSlugs({});
+                    setBackfillMsg(`✓ ${res.updated} campagne(s) mise(s) à jour`);
+                  }}
+                  className="text-sm font-label font-medium bg-primary/10 text-primary px-4 py-2 rounded-xl hover:bg-primary/20 transition-colors"
+                >
+                  Générer slugs campagnes
+                </button>
+                <button
+                  onClick={async () => {
+                    const res = await backfillUserSlugs({});
+                    setBackfillMsg(`✓ ${res.updated} profil(s) mis à jour`);
+                  }}
+                  className="text-sm font-label font-medium bg-primary/10 text-primary px-4 py-2 rounded-xl hover:bg-primary/20 transition-colors"
+                >
+                  Générer slugs profils
+                </button>
+              </div>
+              {backfillMsg && <p className="text-xs font-body text-green-700 mt-3">{backfillMsg}</p>}
             </div>
 
             {/* Top contributeurs */}

@@ -9,14 +9,13 @@ import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useUser } from "@clerk/nextjs";
-import type { Id } from "../../../../convex/_generated/dataModel";
 
 export default function ContenuPage() {
   const params = useParams();
-  const id = params.id as Id<"contenus">;
+  const idOrSlug = params.id as string;
   const { isSignedIn, user } = useUser();
 
-  const contenu = useQuery(api.contenus.getById, { id });
+  const contenu = useQuery(api.contenus.getByIdOrSlug, { idOrSlug });
   const similaires = useQuery(
     api.contenus.list,
     contenu ? { secteur: contenu.secteur } : "skip"
@@ -25,17 +24,17 @@ export default function ContenuPage() {
   const toggleLike = useMutation(api.likes.toggleLike);
   const liked = useQuery(
     api.likes.hasLiked,
-    isSignedIn && user ? { clerkId: user.id, contenuId: id } : "skip"
+    isSignedIn && user && contenu ? { clerkId: user.id, contenuId: contenu._id } : "skip"
   );
 
   useEffect(() => {
-    if (contenu) incrementerVues({ id });
+    if (contenu) incrementerVues({ id: contenu._id });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contenu?._id]);
 
   const handleLike = async () => {
-    if (!isSignedIn || !user) return;
-    await toggleLike({ clerkId: user.id, contenuId: id });
+    if (!isSignedIn || !user || !contenu) return;
+    await toggleLike({ clerkId: user.id, contenuId: contenu._id });
   };
 
   if (contenu === undefined) {
@@ -143,14 +142,14 @@ export default function ContenuPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <Link href={`/profil/${contenu.userId}`} className="font-body font-medium text-sm text-on-surface hover:text-primary transition-colors">
+                    <Link href={`/profil/${contenu.user?.slug ?? contenu.userId}`} className="font-body font-medium text-sm text-on-surface hover:text-primary transition-colors">
                       {contributeurNom}
                     </Link>
                     {contenu.user?.poste && (
                       <p className="text-xs font-label text-on-surface-variant truncate">{contenu.user.poste}</p>
                     )}
                   </div>
-                  <Link href={`/profil/${contenu.userId}`} className="text-xs font-label text-primary hover:opacity-75 flex-shrink-0">
+                  <Link href={`/profil/${contenu.user?.slug ?? contenu.userId}`} className="text-xs font-label text-primary hover:opacity-75 flex-shrink-0">
                     Portfolio →
                   </Link>
                 </div>
@@ -220,15 +219,15 @@ export default function ContenuPage() {
         </div>
 
         {/* Campagnes similaires */}
-        {similaires && similaires.filter(c => c._id !== id).length > 0 && (
+        {similaires && similaires.filter(c => c._id !== contenu._id).length > 0 && (
           <div className="mt-16 pt-12 border-t border-outline-variant/20">
             <h2 className="font-headline font-bold text-2xl text-on-surface mb-6">Dans le même secteur</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {similaires
-                .filter(c => c._id !== id)
+                .filter(c => c._id !== contenu._id)
                 .slice(0, 3)
                 .map(c => (
-                  <Link key={c._id} href={`/contenu/${c._id}`}>
+                  <Link key={c._id} href={`/contenu/${c.slug ?? c._id}`}>
                     <article className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-card hover:shadow-ambient transition-all hover:-translate-y-0.5 group cursor-pointer">
                       <div className="w-full aspect-[4/5] bg-surface-container relative overflow-hidden">
                         {c.visuel_url ? (

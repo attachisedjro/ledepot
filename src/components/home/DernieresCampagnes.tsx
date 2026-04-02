@@ -39,7 +39,7 @@ export default function DernieresCampagnes() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
       {derniers.map((c) => (
-        <Link key={c._id} href={`/contenu/${c._id}`}>
+        <Link key={c._id} href={`/contenu/${c.slug ?? c._id}`}>
           <article className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-card hover:shadow-ambient transition-all hover:-translate-y-0.5 group cursor-pointer">
             <div className="w-full aspect-[4/5] bg-surface-container relative overflow-hidden">
               {c.visuel_url ? (

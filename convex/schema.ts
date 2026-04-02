@@ -16,7 +16,11 @@ export default defineSchema({
     instagram_url: v.optional(v.string()),
     avatar_url: v.optional(v.string()),
     avatar_storage_id: v.optional(v.id("_storage")),
-  }).index("by_clerk_id", ["clerkId"]),
+    slug: v.optional(v.string()),
+    memberNumber: v.optional(v.number()),
+  })
+    .index("by_clerk_id", ["clerkId"])
+    .index("by_slug", ["slug"]),
 
   contenus: defineTable({
     userId: v.id("users"),
@@ -41,11 +45,13 @@ export default defineSchema({
     ),
     vues: v.number(),
     likes: v.optional(v.number()),
+    slug: v.optional(v.string()),
   })
     .index("by_user", ["userId"])
     .index("by_statut", ["statut"])
     .index("by_pays", ["pays"])
-    .index("by_secteur", ["secteur"]),
+    .index("by_secteur", ["secteur"])
+    .index("by_slug", ["slug"]),
 
   likes: defineTable({
     clerkId: v.string(),

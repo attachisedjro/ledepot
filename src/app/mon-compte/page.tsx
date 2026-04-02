@@ -375,7 +375,7 @@ export default function MonComptePage() {
                   </button>
                   {userProfile && (
                     <Link
-                      href={`/profil/${userProfile._id}`}
+                      href={`/profil/${userProfile.slug ?? userProfile._id}`}
                       className="mt-2 w-full bg-surface-container text-sm font-label font-medium text-on-surface-variant py-2.5 rounded-xl hover:bg-surface-container-high transition-colors block text-center"
                     >
                       Voir mon profil public
@@ -438,7 +438,7 @@ export default function MonComptePage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <Link href={`/contenu/${c._id}`} className="font-headline font-bold text-base text-on-surface hover:text-primary transition-colors line-clamp-1">
+                          <Link href={`/contenu/${c.slug ?? c._id}`} className="font-headline font-bold text-base text-on-surface hover:text-primary transition-colors line-clamp-1">
                             {c.titre}
                           </Link>
                           <span className={`text-xs font-label font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${

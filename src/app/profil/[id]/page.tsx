@@ -7,20 +7,19 @@ import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import type { Id } from "../../../../convex/_generated/dataModel";
 import { useState } from "react";
 
 export default function ProfilPage() {
   const params = useParams();
-  const userId = params.id as Id<"users">;
+  const idOrSlug = params.id as string;
 
   const [filterSecteur, setFilterSecteur] = useState("");
   const [filterPays, setFilterPays] = useState("");
   const [filterOccasion, setFilterOccasion] = useState("");
   const [filterAnnee, setFilterAnnee] = useState("");
 
-  const user = useQuery(api.users.getById, { id: userId });
-  const contenus = useQuery(api.contenus.getByUser, { userId });
+  const user = useQuery(api.users.getByIdOrSlug, { idOrSlug });
+  const contenus = useQuery(api.contenus.getByUser, user ? { userId: user._id } : "skip");
 
   if (user === undefined) {
     return (
@@ -226,7 +225,7 @@ export default function ProfilPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {filtered.map((c) => (
-                  <Link key={c._id} href={`/contenu/${c._id}`}>
+                  <Link key={c._id} href={`/contenu/${c.slug ?? c._id}`}>
                     <article className="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-card hover:shadow-ambient transition-all hover:-translate-y-0.5 group cursor-pointer">
                       {/* Visuel */}
                       <div className="w-full aspect-video bg-surface-container relative overflow-hidden">
