@@ -6,7 +6,7 @@ import { api } from "../../../convex/_generated/api";
 import Image from "next/image";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 const ADMIN_CLERK_IDS = ["user_3BfUEKIgwgcZ97tshB4NIVjEtag"];
@@ -240,6 +240,22 @@ export default function AdminPage() {
   const [tri, setTri] = useState<Tri>("recent");
   const [section, setSection] = useState<"overview" | "moderation" | "membres">("overview");
   const [showExport, setShowExport] = useState(false);
+  const [clerkEmails, setClerkEmails] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (section === "membres") {
+      fetch("/api/admin/users")
+        .then((r) => r.json())
+        .then((data: { clerkId: string; email: string | null }[]) => {
+          const map: Record<string, string> = {};
+          for (const u of data) {
+            if (u.email) map[u.clerkId] = u.email;
+          }
+          setClerkEmails(map);
+        })
+        .catch(() => {});
+    }
+  }, [section]);
 
   const tousLesContenus = useQuery(api.contenus.listAll, {});
   const tousLesUsers = useQuery(api.users.listAll, {});
@@ -572,7 +588,7 @@ export default function AdminPage() {
                                 {nomComplet}
                               </Link>
                             </td>
-                            <td className="px-4 py-3 text-xs font-body text-on-surface-variant">{u.email ?? "—"}</td>
+                            <td className="px-4 py-3 text-xs font-body text-on-surface-variant">{clerkEmails[u.clerkId] ?? u.email ?? "—"}</td>
                             <td className="px-4 py-3 text-xs font-body text-on-surface-variant">{u.pays ?? "—"}</td>
                             <td className="px-4 py-3 text-xs font-body text-on-surface-variant whitespace-nowrap">
                               {new Date(u._creationTime).toLocaleDateString("fr", { day: "numeric", month: "short", year: "numeric" })}
