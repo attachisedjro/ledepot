@@ -374,12 +374,27 @@ export default function MonComptePage() {
                     Modifier le profil
                   </button>
                   {userProfile && (
-                    <Link
-                      href={`/profil/${userProfile.slug ?? userProfile._id}`}
-                      className="mt-2 w-full bg-surface-container text-sm font-label font-medium text-on-surface-variant py-2.5 rounded-xl hover:bg-surface-container-high transition-colors block text-center"
-                    >
-                      Voir mon profil public
-                    </Link>
+                    <>
+                      <Link
+                        href={`/profil/${userProfile.slug ?? userProfile._id}`}
+                        className="mt-2 w-full bg-surface-container text-sm font-label font-medium text-on-surface-variant py-2.5 rounded-xl hover:bg-surface-container-high transition-colors block text-center"
+                      >
+                        Voir mon profil public
+                      </Link>
+                      <button
+                        onClick={() => {
+                          const url = `${window.location.origin}/profil/${userProfile.slug ?? userProfile._id}`;
+                          navigator.clipboard.writeText(url).then(() => {
+                            const btn = document.getElementById("copy-link-btn");
+                            if (btn) { btn.textContent = "Lien copié !"; setTimeout(() => { btn.textContent = "Copier mon lien"; }, 2000); }
+                          });
+                        }}
+                        id="copy-link-btn"
+                        className="mt-1 w-full bg-surface-container text-sm font-label font-medium text-on-surface-variant py-2.5 rounded-xl hover:bg-surface-container-high transition-colors"
+                      >
+                        Copier mon lien
+                      </button>
+                    </>
                   )}
                 </>
               )}
