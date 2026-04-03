@@ -501,7 +501,7 @@ export default function MonComptePage() {
                             {FORMATS_LIST.map(fmt => <option key={fmt} value={fmt}>{fmt}</option>)}
                           </select>
                           <select value={editForm.annee} onChange={(e) => setEditForm(f => ({ ...f, annee: e.target.value }))} className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
-                            {["2022","2023","2024","2025","2026"].map(a => <option key={a} value={a}>{a}</option>)}
+                            {["2018","2019","2020","2021","2022","2023","2024","2025","2026"].map(a => <option key={a} value={a}>{a}</option>)}
                           </select>
                           <select value={editForm.occasion} onChange={(e) => setEditForm(f => ({ ...f, occasion: e.target.value }))} className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 appearance-none">
                             {OCCASIONS_LIST.map(o => <option key={o} value={o}>{o}</option>)}
