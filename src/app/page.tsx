@@ -29,7 +29,7 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="pt-32 pb-20 px-6 max-w-6xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid lg:grid-cols-[1fr_280px] gap-12 items-center">
         <div>
           {/* Badge */}
           <span className="inline-flex items-center gap-2 bg-surface-container px-4 py-1.5 rounded-full text-xs font-label font-medium text-primary mb-8">

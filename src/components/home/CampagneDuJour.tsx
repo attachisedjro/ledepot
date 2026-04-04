@@ -17,7 +17,7 @@ export default function CampagneDuJour() {
           <img
             src={campagne.visuel_url}
             alt={campagne.titre}
-            className="w-full aspect-[4/5] max-h-72 object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full aspect-[4/5] object-cover group-hover:scale-105 transition-transform duration-500"
           />
         )}
         <div className="p-4">
