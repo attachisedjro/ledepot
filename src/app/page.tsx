@@ -2,6 +2,7 @@ import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import DernieresCampagnes from "@/components/home/DernieresCampagnes";
+import CampagneDuJour from "@/components/home/CampagneDuJour";
 
 const HOW_IT_WORKS = [
   {
@@ -28,7 +29,8 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="pt-32 pb-20 px-6 max-w-6xl mx-auto">
-        <div className="max-w-3xl">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div>
           {/* Badge */}
           <span className="inline-flex items-center gap-2 bg-surface-container px-4 py-1.5 rounded-full text-xs font-label font-medium text-primary mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-primary-container inline-block" />
@@ -66,6 +68,11 @@ export default function HomePage() {
           <p className="text-xs font-body text-on-surface-variant mt-6">
             Accès libre · Inscription pour soumettre
           </p>
+        </div>
+        {/* Campagne du jour — colonne droite, visible seulement si épinglée */}
+        <div className="hidden lg:block">
+          <CampagneDuJour />
+        </div>
         </div>
       </section>
 

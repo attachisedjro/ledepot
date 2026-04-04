@@ -67,6 +67,7 @@ export default function GaleriePage() {
   const [triLikes, setTriLikes] = useState(false);
   const [recherche, setRecherche] = useState("");
 
+  const coupDeCoeur = useQuery(api.contenus.getCoupDeCoeur);
   const contenus = useQuery(api.contenus.list, {
     pays: filtres.pays || undefined,
     secteur: filtres.secteur || undefined,
@@ -121,6 +122,37 @@ export default function GaleriePage() {
             {totalContenus} campagne{totalContenus > 1 ? "s" : ""} publiée{totalContenus > 1 ? "s" : ""}
           </p>
         </div>
+
+        {/* Coup de cœur de la semaine */}
+        {coupDeCoeur && (
+          <Link href={`/contenu/${coupDeCoeur.slug ?? coupDeCoeur._id}`} className="block group mb-8">
+            <div className="relative rounded-2xl overflow-hidden bg-surface-container-lowest shadow-ambient hover:shadow-card transition-all">
+              <div className="flex flex-col sm:flex-row gap-0">
+                {coupDeCoeur.visuel_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={coupDeCoeur.visuel_url}
+                    alt={coupDeCoeur.titre}
+                    className="w-full sm:w-56 h-40 sm:h-auto object-cover flex-shrink-0"
+                  />
+                )}
+                <div className="p-5 flex flex-col justify-center">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-label font-bold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full w-fit mb-3">
+                    ✦ Coup de cœur de la semaine
+                  </span>
+                  <p className="text-xs font-body text-on-surface-variant mb-1">{coupDeCoeur.marque} · {coupDeCoeur.pays} · {coupDeCoeur.secteur}</p>
+                  <h3 className="font-headline font-bold text-xl text-on-surface group-hover:text-primary transition-colors leading-tight mb-2">
+                    {coupDeCoeur.titre}
+                  </h3>
+                  <p className="text-sm font-body text-on-surface-variant line-clamp-2 leading-relaxed">
+                    {coupDeCoeur.intention_creative}
+                  </p>
+                  <p className="text-xs font-label font-medium text-primary mt-3">Voir la campagne →</p>
+                </div>
+              </div>
+            </div>
+          </Link>
+        )}
 
         {/* Recherche */}
         <div className="relative mb-6">

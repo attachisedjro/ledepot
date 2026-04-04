@@ -264,6 +264,8 @@ export default function AdminPage() {
   const supprimer = useMutation(api.contenus.supprimer);
   const backfillSlugs = useMutation(api.contenus.backfillSlugs);
   const backfillUserSlugs = useMutation(api.users.backfillUserSlugs);
+  const setCampagneDuJour = useMutation(api.contenus.setCampagneDuJour);
+  const setCoupDeCoeur = useMutation(api.contenus.setCoupDeCoeur);
   const [backfillMsg, setBackfillMsg] = useState("");
 
   if (!user) return null;
@@ -709,6 +711,18 @@ export default function AdminPage() {
                           Republier
                         </button>
                       )}
+                      <button
+                        onClick={() => setCampagneDuJour({ id: (c as { campagne_du_jour?: boolean }).campagne_du_jour ? undefined : c._id as Id<"contenus"> })}
+                        className={`text-xs font-label font-medium px-3 py-1.5 rounded-xl transition-colors ${(c as { campagne_du_jour?: boolean }).campagne_du_jour ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"}`}
+                      >
+                        {(c as { campagne_du_jour?: boolean }).campagne_du_jour ? "★ Du jour" : "Jour"}
+                      </button>
+                      <button
+                        onClick={() => setCoupDeCoeur({ id: (c as { coup_de_coeur?: boolean }).coup_de_coeur ? undefined : c._id as Id<"contenus"> })}
+                        className={`text-xs font-label font-medium px-3 py-1.5 rounded-xl transition-colors ${(c as { coup_de_coeur?: boolean }).coup_de_coeur ? "bg-amber-500 text-white" : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"}`}
+                      >
+                        {(c as { coup_de_coeur?: boolean }).coup_de_coeur ? "✦ Cœur" : "Cœur"}
+                      </button>
                       <button
                         onClick={() => { if (confirm(`Supprimer "${c.titre}" définitivement ?`)) supprimer({ id: c._id as Id<"contenus"> }); }}
                         className="text-xs font-label font-medium bg-error-container text-error px-3 py-1.5 rounded-xl hover:opacity-80 transition-opacity"

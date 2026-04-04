@@ -45,6 +45,64 @@ export const list = query({
   },
 });
 
+// Campagne du jour (épinglée par l'admin)
+export const getCampagneDuJour = query({
+  args: {},
+  handler: async (ctx) => {
+    const c = await ctx.db
+      .query("contenus")
+      .withIndex("by_campagne_du_jour", (q) => q.eq("campagne_du_jour", true))
+      .first();
+    if (!c) return null;
+    const user = await ctx.db.get(c.userId);
+    return { ...c, user };
+  },
+});
+
+// Coup de cœur de la semaine (épinglé par l'admin)
+export const getCoupDeCoeur = query({
+  args: {},
+  handler: async (ctx) => {
+    const c = await ctx.db
+      .query("contenus")
+      .withIndex("by_coup_de_coeur", (q) => q.eq("coup_de_coeur", true))
+      .first();
+    if (!c) return null;
+    const user = await ctx.db.get(c.userId);
+    return { ...c, user };
+  },
+});
+
+// Admin — définit la campagne du jour (une seule à la fois)
+export const setCampagneDuJour = mutation({
+  args: { id: v.optional(v.id("contenus")) },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("contenus")
+      .withIndex("by_campagne_du_jour", (q) => q.eq("campagne_du_jour", true))
+      .collect();
+    for (const c of existing) {
+      await ctx.db.patch(c._id, { campagne_du_jour: false });
+    }
+    if (args.id) await ctx.db.patch(args.id, { campagne_du_jour: true });
+  },
+});
+
+// Admin — définit le coup de cœur (un seul à la fois)
+export const setCoupDeCoeur = mutation({
+  args: { id: v.optional(v.id("contenus")) },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("contenus")
+      .withIndex("by_coup_de_coeur", (q) => q.eq("coup_de_coeur", true))
+      .collect();
+    for (const c of existing) {
+      await ctx.db.patch(c._id, { coup_de_coeur: false });
+    }
+    if (args.id) await ctx.db.patch(args.id, { coup_de_coeur: true });
+  },
+});
+
 // Récupère un contenu par id (avec infos CM)
 export const getById = query({
   args: { id: v.id("contenus") },

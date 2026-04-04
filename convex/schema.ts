@@ -46,12 +46,16 @@ export default defineSchema({
     vues: v.number(),
     likes: v.optional(v.number()),
     slug: v.optional(v.string()),
+    campagne_du_jour: v.optional(v.boolean()),
+    coup_de_coeur: v.optional(v.boolean()),
   })
     .index("by_user", ["userId"])
     .index("by_statut", ["statut"])
     .index("by_pays", ["pays"])
     .index("by_secteur", ["secteur"])
-    .index("by_slug", ["slug"]),
+    .index("by_slug", ["slug"])
+    .index("by_campagne_du_jour", ["campagne_du_jour"])
+    .index("by_coup_de_coeur", ["coup_de_coeur"]),
 
   likes: defineTable({
     clerkId: v.string(),

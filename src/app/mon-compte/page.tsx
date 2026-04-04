@@ -40,6 +40,7 @@ export default function MonComptePage() {
     api.contenus.getByUser,
     userProfile ? { userId: userProfile._id } : "skip"
   );
+  const tousContenus = useQuery(api.contenus.list, {});
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ nom: "", prenom: "", poste: "", pays: "", bio: "", linkedin_url: "", facebook_url: "", x_url: "", instagram_url: "" });
@@ -399,6 +400,30 @@ export default function MonComptePage() {
                 </>
               )}
             </div>
+
+            {/* Rang dans la communauté */}
+            {(() => {
+              if (!tousContenus || !userProfile) return null;
+              const vuesByUser = new Map<string, number>();
+              for (const c of tousContenus) {
+                if (c.statut === "publie") {
+                  vuesByUser.set(String(c.userId), (vuesByUser.get(String(c.userId)) ?? 0) + c.vues + (c.likes ?? 0) * 3);
+                }
+              }
+              const ranked = Array.from(vuesByUser.entries()).sort((a, b) => b[1] - a[1]);
+              const rang = ranked.findIndex(([uid]) => uid === String(userProfile._id)) + 1;
+              if (rang === 0) return null;
+              const medal = rang === 1 ? "🥇" : rang === 2 ? "🥈" : rang === 3 ? "🥉" : null;
+              return (
+                <div className="bg-primary/5 rounded-2xl px-4 py-3 flex items-center gap-3">
+                  {medal && <span className="text-2xl">{medal}</span>}
+                  <div>
+                    <p className="text-xs font-label font-bold text-primary">#{rang} dans la communauté</p>
+                    <p className="text-xs font-body text-on-surface-variant">Classé par vues & likes cumulés</p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-2">
