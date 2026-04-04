@@ -137,7 +137,7 @@ export default function GaleriePage() {
                   <div className="rounded-2xl overflow-hidden bg-surface-container-lowest shadow-ambient hover:shadow-card transition-all hover:-translate-y-0.5">
                     {c.visuel_url && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.visuel_url} alt={c.titre} className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img src={c.visuel_url} alt={c.titre} className="w-full aspect-video object-cover group-hover:scale-105 transition-transform duration-500" />
                     )}
                     <div className="p-4">
                       <p className="text-xs font-body text-on-surface-variant mb-1 truncate">{c.marque} · {c.pays}</p>

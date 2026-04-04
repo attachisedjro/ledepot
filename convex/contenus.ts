@@ -107,8 +107,9 @@ export const setCoupDeCoeur = mutation({
         .withIndex("by_coup_de_coeur", (q) => q.eq("coup_de_coeur", true))
         .collect();
       if (existing.length >= 3) {
-        // Retirer le plus ancien pour laisser la place
-        await ctx.db.patch(existing[0]._id, { coup_de_coeur: false });
+        // Retirer le plus ancien (creationTime le plus petit)
+        const oldest = existing.sort((a, b) => a._creationTime - b._creationTime)[0];
+        await ctx.db.patch(oldest._id, { coup_de_coeur: false });
       }
       await ctx.db.patch(args.id, { coup_de_coeur: true });
     }
