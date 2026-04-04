@@ -141,10 +141,14 @@ export const getByIdOrSlug = query({
       const user = await ctx.db.get(contenu.userId);
       return { ...contenu, user };
     } else {
-      const contenu = await ctx.db.get(args.idOrSlug as Id<"contenus">);
-      if (!contenu) return null;
-      const user = await ctx.db.get(contenu.userId);
-      return { ...contenu, user };
+      try {
+        const contenu = await ctx.db.get(args.idOrSlug as Id<"contenus">);
+        if (!contenu) return null;
+        const user = await ctx.db.get(contenu.userId);
+        return { ...contenu, user };
+      } catch {
+        return null;
+      }
     }
   },
 });

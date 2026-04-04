@@ -70,7 +70,11 @@ export const getByIdOrSlug = query({
         .withIndex("by_slug", (q) => q.eq("slug", args.idOrSlug))
         .first();
     } else {
-      return await ctx.db.get(args.idOrSlug as Id<"users">);
+      try {
+        return await ctx.db.get(args.idOrSlug as Id<"users">);
+      } catch {
+        return null;
+      }
     }
   },
 });
