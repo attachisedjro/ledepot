@@ -8,32 +8,31 @@ export async function generateMetadata({
 }: {
   params: { id: string };
 }): Promise<Metadata> {
-  const contenu = await fetchQuery(api.contenus.getByIdOrSlug, { idOrSlug: params.id });
+  try {
+    const contenu = await fetchQuery(api.contenus.getByIdOrSlug, { idOrSlug: params.id });
 
-  if (!contenu) {
-    return { title: "Campagne introuvable - Le Dépôt" };
+    if (!contenu) {
+      return { title: "Campagne - Le Dépôt" };
+    }
+
+    const title = `${contenu.titre} - Le Dépôt`;
+    const description = contenu.intention_creative.slice(0, 200);
+    const images = contenu.visuel_url ? [{ url: contenu.visuel_url }] : [{ url: "/og-image.png" }];
+
+    return {
+      title,
+      description,
+      openGraph: { title, description, images, type: "article" },
+      twitter: {
+        card: contenu.visuel_url ? "summary_large_image" : "summary",
+        title,
+        description,
+        images: contenu.visuel_url ? [contenu.visuel_url] : ["/og-image.png"],
+      },
+    };
+  } catch {
+    return { title: "Campagne - Le Dépôt" };
   }
-
-  const title = `${contenu.titre} - Le Dépôt`;
-  const description = contenu.intention_creative.slice(0, 200);
-  const images = contenu.visuel_url ? [{ url: contenu.visuel_url }] : [{ url: "/og-image.png" }];
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      images,
-      type: "article",
-    },
-    twitter: {
-      card: contenu.visuel_url ? "summary_large_image" : "summary",
-      title,
-      description,
-      images: contenu.visuel_url ? [contenu.visuel_url] : ["/og-image.png"],
-    },
-  };
 }
 
 export default function ContenuPage() {
