@@ -28,7 +28,10 @@ export const upsertUser = mutation({
     // Assigner un numéro de membre séquentiel
     const allUsers = await ctx.db.query("users").collect();
     const memberNumber = allUsers.length + 1;
-    const slug = generateSlug(`${args.prenom}-${args.nom}-${memberNumber}`);
+    const prenom = args.prenom || "membre";
+    const nom = args.nom || "";
+    const base = nom ? `${prenom}-${nom}-${memberNumber}` : `${prenom}-${memberNumber}`;
+    const slug = generateSlug(base);
 
     return await ctx.db.insert("users", {
       clerkId: args.clerkId,
@@ -64,18 +67,21 @@ export const getById = query({
 export const getByIdOrSlug = query({
   args: { idOrSlug: v.string() },
   handler: async (ctx, args) => {
-    if (args.idOrSlug.includes("-")) {
-      return await ctx.db
-        .query("users")
-        .withIndex("by_slug", (q) => q.eq("slug", args.idOrSlug))
-        .first();
-    } else {
+    // Toujours essayer le slug en premier
+    const bySlug = await ctx.db
+      .query("users")
+      .withIndex("by_slug", (q) => q.eq("slug", args.idOrSlug))
+      .first();
+    if (bySlug) return bySlug;
+    // Fallback : ID Convex (pas de tiret = probablement un ID)
+    if (!args.idOrSlug.includes("-")) {
       try {
         return await ctx.db.get(args.idOrSlug as Id<"users">);
       } catch {
         return null;
       }
     }
+    return null;
   },
 });
 
