@@ -59,17 +59,20 @@ export const getCampagneDuJour = query({
   },
 });
 
-// Coup de cœur de la semaine (épinglé par l'admin)
+// Coups de cœur de la semaine (jusqu'à 3, épinglés par l'admin)
 export const getCoupDeCoeur = query({
   args: {},
   handler: async (ctx) => {
-    const c = await ctx.db
+    const liste = await ctx.db
       .query("contenus")
       .withIndex("by_coup_de_coeur", (q) => q.eq("coup_de_coeur", true))
-      .first();
-    if (!c) return null;
-    const user = await ctx.db.get(c.userId);
-    return { ...c, user };
+      .collect();
+    return await Promise.all(
+      liste.slice(0, 3).map(async (c) => {
+        const user = await ctx.db.get(c.userId);
+        return { ...c, user };
+      })
+    );
   },
 });
 
@@ -88,18 +91,27 @@ export const setCampagneDuJour = mutation({
   },
 });
 
-// Admin — définit le coup de cœur (un seul à la fois)
+// Admin — toggle coup de cœur (max 3 simultanément)
 export const setCoupDeCoeur = mutation({
-  args: { id: v.optional(v.id("contenus")) },
+  args: { id: v.id("contenus") },
   handler: async (ctx, args) => {
-    const existing = await ctx.db
-      .query("contenus")
-      .withIndex("by_coup_de_coeur", (q) => q.eq("coup_de_coeur", true))
-      .collect();
-    for (const c of existing) {
-      await ctx.db.patch(c._id, { coup_de_coeur: false });
+    const contenu = await ctx.db.get(args.id);
+    if (!contenu) return;
+    if (contenu.coup_de_coeur) {
+      // Désépingler
+      await ctx.db.patch(args.id, { coup_de_coeur: false });
+    } else {
+      // Vérifier qu'on n'a pas déjà 3 coups de cœur
+      const existing = await ctx.db
+        .query("contenus")
+        .withIndex("by_coup_de_coeur", (q) => q.eq("coup_de_coeur", true))
+        .collect();
+      if (existing.length >= 3) {
+        // Retirer le plus ancien pour laisser la place
+        await ctx.db.patch(existing[0]._id, { coup_de_coeur: false });
+      }
+      await ctx.db.patch(args.id, { coup_de_coeur: true });
     }
-    if (args.id) await ctx.db.patch(args.id, { coup_de_coeur: true });
   },
 });
 

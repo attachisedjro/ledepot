@@ -123,35 +123,34 @@ export default function GaleriePage() {
           </p>
         </div>
 
-        {/* Coup de cœur de la semaine */}
-        {coupDeCoeur && (
-          <Link href={`/contenu/${coupDeCoeur.slug ?? coupDeCoeur._id}`} className="block group mb-8">
-            <div className="relative rounded-2xl overflow-hidden bg-surface-container-lowest shadow-ambient hover:shadow-card transition-all">
-              <div className="flex flex-col sm:flex-row gap-0">
-                {coupDeCoeur.visuel_url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={coupDeCoeur.visuel_url}
-                    alt={coupDeCoeur.titre}
-                    className="w-full sm:w-56 h-40 sm:h-auto object-cover flex-shrink-0"
-                  />
-                )}
-                <div className="p-5 flex flex-col justify-center">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-label font-bold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full w-fit mb-3">
-                    ✦ Coup de cœur de la semaine
-                  </span>
-                  <p className="text-xs font-body text-on-surface-variant mb-1">{coupDeCoeur.marque} · {coupDeCoeur.pays} · {coupDeCoeur.secteur}</p>
-                  <h3 className="font-headline font-bold text-xl text-on-surface group-hover:text-primary transition-colors leading-tight mb-2">
-                    {coupDeCoeur.titre}
-                  </h3>
-                  <p className="text-sm font-body text-on-surface-variant line-clamp-2 leading-relaxed">
-                    {coupDeCoeur.intention_creative}
-                  </p>
-                  <p className="text-xs font-label font-medium text-primary mt-3">Voir la campagne →</p>
-                </div>
-              </div>
+        {/* Coups de cœur de la semaine */}
+        {coupDeCoeur && coupDeCoeur.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="inline-flex items-center gap-1.5 text-xs font-label font-bold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full">
+                ✦ Coups de cœur de la semaine
+              </span>
             </div>
-          </Link>
+            <div className={`grid gap-4 ${coupDeCoeur.length === 1 ? "grid-cols-1" : coupDeCoeur.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
+              {coupDeCoeur.map((c) => (
+                <Link key={c._id} href={`/contenu/${c.slug ?? c._id}`} className="block group">
+                  <div className="rounded-2xl overflow-hidden bg-surface-container-lowest shadow-ambient hover:shadow-card transition-all hover:-translate-y-0.5">
+                    {c.visuel_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={c.visuel_url} alt={c.titre} className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-500" />
+                    )}
+                    <div className="p-4">
+                      <p className="text-xs font-body text-on-surface-variant mb-1 truncate">{c.marque} · {c.pays}</p>
+                      <h3 className="font-headline font-bold text-base text-on-surface group-hover:text-primary transition-colors line-clamp-2 leading-tight">
+                        {c.titre}
+                      </h3>
+                      <p className="text-xs font-label font-medium text-primary mt-2">Voir →</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
         )}
 
         {/* Recherche */}
