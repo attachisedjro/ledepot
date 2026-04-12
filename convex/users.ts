@@ -121,14 +121,45 @@ export const updateProfile = mutation({
       avatar_url = (await ctx.storage.getUrl(args.avatar_storage_id)) ?? undefined;
     }
 
-    // Mettre à jour le slug automatiquement si l'utilisateur avait un slug par défaut ("membre-X" ou slug numérique comme "3")
+    // Mettre à jour le slug si c'est un slug par défaut (numérique, "membre-X", vide)
+    // ou si le prénom/nom a réellement changé par rapport à ce qui est dans le slug actuel
     let slugUpdate: { slug?: string } = {};
-    const isDefaultSlug = user.slug?.startsWith("membre-") || /^\d+$/.test(user.slug ?? "");
-    if (isDefaultSlug && args.prenom && args.prenom !== "membre") {
-      const newBase = args.nom
-        ? `${args.prenom}-${args.nom}-${user.memberNumber ?? 1}`
-        : `${args.prenom}-${user.memberNumber ?? 1}`;
-      slugUpdate = { slug: generateSlug(newBase) };
+    const prenomChanged = args.prenom && args.prenom !== user.prenom;
+    const nomChanged = args.nom !== user.nom;
+    const isDefaultSlug =
+      !user.slug ||
+      /^\d+$/.test(user.slug) ||
+      user.slug.startsWith("membre-");
+
+    if (args.prenom && args.prenom.trim() && (isDefaultSlug || prenomChanged || nomChanged)) {
+      const baseSlug = generateSlug(
+        args.nom?.trim()
+          ? `${args.prenom.trim()}-${args.nom.trim()}`
+          : args.prenom.trim()
+      );
+
+      // Chercher un slug unique : essayer d'abord avec memberNumber, sinon incrémenter
+      let memberSuffix = user.memberNumber;
+      if (!memberSuffix) {
+        // Assigner un memberNumber si absent : compter tous les users
+        const allUsers = await ctx.db.query("users").collect();
+        memberSuffix = allUsers.length;
+        await ctx.db.patch(user._id, { memberNumber: memberSuffix });
+      }
+
+      let candidate = `${baseSlug}-${memberSuffix}`;
+      // Vérifier l'unicité (au cas où deux users auraient le même nom + numéro)
+      let attempts = 0;
+      while (attempts < 10) {
+        const conflict = await ctx.db
+          .query("users")
+          .withIndex("by_slug", (q) => q.eq("slug", candidate))
+          .first();
+        if (!conflict || conflict._id === user._id) break;
+        attempts++;
+        candidate = `${baseSlug}-${memberSuffix}-${attempts}`;
+      }
+      slugUpdate = { slug: candidate };
     }
 
     await ctx.db.patch(user._id, {
@@ -156,10 +187,28 @@ export const backfillUserSlugs = mutation({
     let count = 0;
     for (let i = 0; i < users.length; i++) {
       const u = users[i];
-      if (!u.slug || !u.memberNumber) {
-        const memberNumber = i + 1;
-        const slug = generateSlug(`${u.prenom}-${u.nom}-${memberNumber}`);
-        await ctx.db.patch(u._id, { slug, memberNumber });
+      const memberNumber = u.memberNumber ?? (i + 1);
+      const prenom = u.prenom?.trim() || "membre";
+      const nom = u.nom?.trim() || "";
+      const base = nom
+        ? generateSlug(`${prenom}-${nom}-${memberNumber}`)
+        : generateSlug(`${prenom}-${memberNumber}`);
+
+      // S'assurer que le slug est unique
+      let candidate = base || `membre-${memberNumber}`;
+      let attempts = 0;
+      while (attempts < 10) {
+        const conflict = await ctx.db
+          .query("users")
+          .withIndex("by_slug", (q) => q.eq("slug", candidate))
+          .first();
+        if (!conflict || conflict._id === u._id) break;
+        attempts++;
+        candidate = `${base}-${attempts}`;
+      }
+
+      if (!u.memberNumber || !u.slug || /^\d+$/.test(u.slug) || u.slug.startsWith("membre-")) {
+        await ctx.db.patch(u._id, { slug: candidate, memberNumber });
         count++;
       }
     }
