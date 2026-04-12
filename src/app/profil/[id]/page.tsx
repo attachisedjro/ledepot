@@ -9,7 +9,7 @@ export async function generateMetadata({
   params: { id: string };
 }): Promise<Metadata> {
   try {
-    const user = await fetchQuery(api.users.getByIdOrSlug, { idOrSlug: params.id }, { nextConfig: { revalidate: 0 } });
+    const user = await fetchQuery(api.users.getByIdOrSlug, { idOrSlug: params.id });
 
     if (!user) {
       return { title: "Profil - Le Dépôt" };
