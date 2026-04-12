@@ -9,29 +9,30 @@ export async function generateMetadata({
   params: { id: string };
 }): Promise<Metadata> {
   try {
-    const user = await fetchQuery(api.users.getByIdOrSlug, { idOrSlug: params.id });
+    const user = await fetchQuery(api.users.getByIdOrSlug, { idOrSlug: params.id }, { nextConfig: { revalidate: 0 } });
 
     if (!user) {
       return { title: "Profil - Le Dépôt" };
     }
 
-    const nom = `${user.prenom} ${user.nom}`;
-    const description = user.bio
-      ? user.bio.slice(0, 200)
+    const nom = [user.prenom, user.nom].filter(Boolean).join(" ") || "un membre";
+    const bio = user.bio?.trim();
+    const description = bio
+      ? bio.slice(0, 200)
       : `Jette un coup d'œil au profil de ${nom} sur Le Dépôt - la bibliothèque du contenu digital africain.`;
 
     return {
       title: `${nom} | Le Dépôt`,
       description,
       openGraph: {
-        title: `${nom} sur Le Dépôt`,
+        title: nom !== "un membre" ? `${nom} sur Le Dépôt` : "Le Dépôt",
         description,
         images: [{ url: "/og-image.png" }],
         type: "profile",
       },
       twitter: {
         card: "summary",
-        title: `${nom} sur Le Dépôt`,
+        title: nom !== "un membre" ? `${nom} sur Le Dépôt` : "Le Dépôt",
         description,
         images: ["/og-image.png"],
       },

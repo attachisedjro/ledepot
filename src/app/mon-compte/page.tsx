@@ -45,6 +45,7 @@ export default function MonComptePage() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ nom: "", prenom: "", poste: "", pays: "", bio: "", linkedin_url: "", facebook_url: "", x_url: "", instagram_url: "" });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [editingId, setEditingId] = useState<Id<"contenus"> | null>(null);
   const [editForm, setEditForm] = useState({ titre: "", marque: "", agence_creative: "", pays: "", secteur: "", occasion: "", format: "", annee: "", lien_publication: "", intention_creative: "", type_contenu: "", anonyme: false });
@@ -163,20 +164,26 @@ export default function MonComptePage() {
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
-    await updateProfile({
-      clerkId: user.id,
-      nom: form.nom,
-      prenom: form.prenom,
-      pays: form.pays || undefined,
-      bio: form.bio || undefined,
-      poste: form.poste || undefined,
-      linkedin_url: form.linkedin_url || undefined,
-      facebook_url: form.facebook_url || undefined,
-      x_url: form.x_url || undefined,
-      instagram_url: form.instagram_url || undefined,
-    });
-    setSaving(false);
-    setEditing(false);
+    setSaveError(null);
+    try {
+      await updateProfile({
+        clerkId: user.id,
+        nom: form.nom,
+        prenom: form.prenom,
+        pays: form.pays || undefined,
+        bio: form.bio || undefined,
+        poste: form.poste || undefined,
+        linkedin_url: form.linkedin_url || undefined,
+        facebook_url: form.facebook_url || undefined,
+        x_url: form.x_url || undefined,
+        instagram_url: form.instagram_url || undefined,
+      });
+      setEditing(false);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Une erreur est survenue. Réessaie.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!user || userProfile === undefined) {
@@ -313,6 +320,9 @@ export default function MonComptePage() {
                     type="url"
                     className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
+                  {saveError && (
+                    <p className="text-xs text-error font-body px-1">{saveError}</p>
+                  )}
                   <div className="flex gap-2 pt-1">
                     <button
                       onClick={handleSave}
@@ -322,7 +332,7 @@ export default function MonComptePage() {
                       {saving ? "..." : "Sauvegarder"}
                     </button>
                     <button
-                      onClick={() => setEditing(false)}
+                      onClick={() => { setEditing(false); setSaveError(null); }}
                       className="px-4 bg-surface-container text-on-surface text-sm font-label rounded-xl"
                     >
                       Annuler

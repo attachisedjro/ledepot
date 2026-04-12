@@ -66,6 +66,8 @@ export default function GaleriePage() {
   });
   const [triLikes, setTriLikes] = useState(false);
   const [recherche, setRecherche] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const coupDeCoeur = useQuery(api.contenus.getCoupDeCoeur);
   const contenus = useQuery(api.contenus.list, {
@@ -77,8 +79,10 @@ export default function GaleriePage() {
     type_contenu: filtres.type_contenu || undefined,
   });
 
-  const setFiltre = (key: keyof typeof filtres) => (val: string) =>
+  const setFiltre = (key: keyof typeof filtres) => (val: string) => {
     setFiltres((f) => ({ ...f, [key]: val }));
+    setCurrentPage(1);
+  };
 
   const hasFilters = Object.values(filtres).some(Boolean) || triLikes || !!recherche.trim();
 
@@ -97,16 +101,24 @@ export default function GaleriePage() {
     );
   }
 
-  // Les visiteurs voient seulement les 6 premiers
-  const visibleContenus = filteredContenus
-    ? isSignedIn ? filteredContenus : filteredContenus.slice(0, LIMIT_VISITEUR)
-    : undefined;
-
   const totalContenus = contenus?.length ?? 0;
   const filteredTotal = filteredContenus?.length ?? 0;
+
+  // Les visiteurs voient seulement les 6 premiers (sans pagination)
+  // Les connectés ont la pagination par 10
   const contenusCaches = !isSignedIn && filteredTotal > LIMIT_VISITEUR
     ? filteredTotal - LIMIT_VISITEUR
     : 0;
+
+  const totalPages = isSignedIn && filteredContenus
+    ? Math.ceil(filteredContenus.length / ITEMS_PER_PAGE)
+    : 1;
+
+  const visibleContenus = filteredContenus
+    ? isSignedIn
+      ? filteredContenus.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+      : filteredContenus.slice(0, LIMIT_VISITEUR)
+    : undefined;
 
   return (
     <div className="min-h-screen bg-surface">
@@ -158,7 +170,7 @@ export default function GaleriePage() {
           <input
             type="text"
             value={recherche}
-            onChange={(e) => setRecherche(e.target.value)}
+            onChange={(e) => { setRecherche(e.target.value); setCurrentPage(1); }}
             placeholder="Rechercher une campagne, une marque..."
             className="w-full bg-surface-container text-sm font-body text-on-surface px-4 py-3 pl-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-on-surface-variant/50"
           />
@@ -194,6 +206,7 @@ export default function GaleriePage() {
                 setFiltres({ pays: "", secteur: "", occasion: "", format: "", annee: "", type_contenu: "" });
                 setTriLikes(false);
                 setRecherche("");
+                setCurrentPage(1);
               }}
               className="text-sm font-label font-medium text-primary hover:opacity-75 transition-opacity px-3 py-2"
             >
@@ -285,6 +298,65 @@ export default function GaleriePage() {
                 </Link>
               ))}
             </div>
+
+            {/* Pagination pour les connectés */}
+            {isSignedIn && totalPages > 1 && (
+              <div className="mt-10 flex items-center justify-center gap-3">
+                <button
+                  onClick={() => { setCurrentPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 text-sm font-label font-medium bg-surface-container text-on-surface rounded-xl hover:bg-surface-container-high transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  ← Précédent
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {(() => {
+                    const pages: (number | "...")[] = [];
+                    if (totalPages <= 7) {
+                      for (let i = 1; i <= totalPages; i++) pages.push(i);
+                    } else {
+                      pages.push(1);
+                      if (currentPage > 3) pages.push("...");
+                      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) pages.push(i);
+                      if (currentPage < totalPages - 2) pages.push("...");
+                      pages.push(totalPages);
+                    }
+                    return pages.map((page, idx) =>
+                      page === "..." ? (
+                        <span key={`ellipsis-${idx}`} className="w-9 h-9 flex items-center justify-center text-sm text-on-surface-variant/50">…</span>
+                      ) : (
+                        <button
+                          key={page}
+                          onClick={() => { setCurrentPage(page as number); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                          className={`w-9 h-9 text-sm font-label font-medium rounded-xl transition-colors ${
+                            page === currentPage
+                              ? "btn-gradient text-white"
+                              : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    );
+                  })()}
+                </div>
+
+                <button
+                  onClick={() => { setCurrentPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 text-sm font-label font-medium bg-surface-container text-on-surface rounded-xl hover:bg-surface-container-high transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Suivant →
+                </button>
+              </div>
+            )}
+
+            {isSignedIn && filteredTotal > 0 && (
+              <p className="mt-4 text-center text-xs font-body text-on-surface-variant">
+                Page {currentPage} sur {totalPages} · {filteredTotal} campagne{filteredTotal > 1 ? "s" : ""}
+              </p>
+            )}
 
             {/* Paywall doux pour les visiteurs */}
             {contenusCaches > 0 && (

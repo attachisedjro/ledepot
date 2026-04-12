@@ -112,13 +112,23 @@ export const updateProfile = mutation({
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-      .unique();
+      .first();
 
-    if (!user) throw new Error("Utilisateur introuvable");
+    if (!user) throw new Error("Profil introuvable. Déconnecte-toi et reconnecte-toi pour recréer ton profil.");
 
     let avatar_url = user.avatar_url;
     if (args.avatar_storage_id) {
       avatar_url = (await ctx.storage.getUrl(args.avatar_storage_id)) ?? undefined;
+    }
+
+    // Mettre à jour le slug automatiquement si l'utilisateur avait un slug par défaut ("membre-X" ou slug numérique comme "3")
+    let slugUpdate: { slug?: string } = {};
+    const isDefaultSlug = user.slug?.startsWith("membre-") || /^\d+$/.test(user.slug ?? "");
+    if (isDefaultSlug && args.prenom && args.prenom !== "membre") {
+      const newBase = args.nom
+        ? `${args.prenom}-${args.nom}-${user.memberNumber ?? 1}`
+        : `${args.prenom}-${user.memberNumber ?? 1}`;
+      slugUpdate = { slug: generateSlug(newBase) };
     }
 
     await ctx.db.patch(user._id, {
@@ -133,6 +143,7 @@ export const updateProfile = mutation({
       instagram_url: args.instagram_url,
       avatar_storage_id: args.avatar_storage_id ?? user.avatar_storage_id,
       avatar_url,
+      ...slugUpdate,
     });
   },
 });
