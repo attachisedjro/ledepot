@@ -67,7 +67,7 @@ export default function GaleriePage() {
   const [triLikes, setTriLikes] = useState(false);
   const [recherche, setRecherche] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 12;
 
   const coupDeCoeur = useQuery(api.contenus.getCoupDeCoeur);
   const contenus = useQuery(api.contenus.list, {
