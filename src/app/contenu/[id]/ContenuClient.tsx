@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
@@ -16,6 +16,7 @@ export default function ContenuClient() {
   const { isSignedIn, user } = useUser();
 
   const contenu = useQuery(api.contenus.getByIdOrSlug, { idOrSlug });
+  const [activeImage, setActiveImage] = useState<string | null>(null);
   const similaires = useQuery(
     api.contenus.list,
     contenu ? { secteur: contenu.secteur } : "skip"
@@ -87,19 +88,45 @@ export default function ContenuClient() {
         <div className="grid md:grid-cols-2 gap-10 items-start">
 
           {/* ── Colonne gauche : visuel ── */}
-          <div className="bg-surface-container rounded-2xl overflow-hidden flex items-center justify-center">
-            {contenu.visuel_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={contenu.visuel_url}
-                alt={contenu.titre}
-                className="w-full h-auto max-h-[80vh] object-contain"
-              />
-            ) : (
-              <div className="w-full aspect-[4/5] flex items-center justify-center">
-                <span className="text-on-surface-variant/20 font-headline text-8xl">{contenu.marque.charAt(0)}</span>
+          <div className="space-y-3">
+            <div className="bg-surface-container rounded-2xl overflow-hidden flex items-center justify-center">
+              {(activeImage ?? contenu.visuel_url) ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={activeImage ?? contenu.visuel_url!}
+                  alt={contenu.titre}
+                  className="w-full h-auto max-h-[80vh] object-contain"
+                />
+              ) : (
+                <div className="w-full aspect-[4/5] flex items-center justify-center">
+                  <span className="text-on-surface-variant/20 font-headline text-8xl">{contenu.marque.charAt(0)}</span>
+                </div>
+              )}
+            </div>
+            {/* Miniatures images supplémentaires */}
+            {(contenu as { images_supplementaires_urls?: string[] }).images_supplementaires_urls?.length ? (
+              <div className="flex gap-2 flex-wrap">
+                {contenu.visuel_url && (
+                  <button
+                    onClick={() => setActiveImage(null)}
+                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors ${!activeImage ? "border-primary" : "border-transparent"}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={contenu.visuel_url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                )}
+                {(contenu as { images_supplementaires_urls?: string[] }).images_supplementaires_urls!.map((url, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImage(url)}
+                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-colors ${activeImage === url ? "border-primary" : "border-transparent"}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* ── Colonne droite : toutes les infos ── */}

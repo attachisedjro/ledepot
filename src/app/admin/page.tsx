@@ -238,12 +238,20 @@ export default function AdminPage() {
 
   const [filtreStatut, setFiltreStatut] = useState<Statut>("tous");
   const [tri, setTri] = useState<Tri>("recent");
-  const [section, setSection] = useState<"overview" | "moderation" | "membres">("overview");
+  const [section, setSection] = useState<"overview" | "moderation" | "membres" | "retargeting">("overview");
   const [showExport, setShowExport] = useState(false);
   const [clerkEmails, setClerkEmails] = useState<Record<string, string>>({});
+  const [rtSelectedTemplate, setRtSelectedTemplate] = useState("relance");
+  const [rtCibleFiltre, setRtCibleFiltre] = useState<"relancer" | "inactif" | "tous">("tous");
+  const [rtSujet, setRtSujet] = useState("");
+  const [rtCorps, setRtCorps] = useState("");
+  const [rtTemplateLoaded, setRtTemplateLoaded] = useState("");
+  const [rtSelectedUsers, setRtSelectedUsers] = useState<Set<string>>(new Set());
+  const [rtSending, setRtSending] = useState(false);
+  const [rtResult, setRtResult] = useState<{ sent: number; failed: number } | null>(null);
 
   useEffect(() => {
-    if (section === "membres") {
+    if (section === "membres" || section === "retargeting") {
       fetch("/api/admin/users")
         .then((r) => r.json())
         .then((data: { clerkId: string; email: string | null }[]) => {
@@ -264,6 +272,7 @@ export default function AdminPage() {
   const supprimer = useMutation(api.contenus.supprimer);
   const backfillSlugs = useMutation(api.contenus.backfillSlugs);
   const backfillUserSlugs = useMutation(api.users.backfillUserSlugs);
+  const marquerContactes = useMutation(api.users.marquerContactes);
   const setCampagneDuJour = useMutation(api.contenus.setCampagneDuJour);
   const setCoupDeCoeur = useMutation(api.contenus.setCoupDeCoeur);
   const [backfillMsg, setBackfillMsg] = useState("");
@@ -382,6 +391,12 @@ export default function AdminPage() {
                 className={`text-sm font-label font-medium px-4 py-2 rounded-lg transition-colors ${section === "membres" ? "bg-surface text-on-surface shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
               >
                 Membres ({nbCMs})
+              </button>
+              <button
+                onClick={() => setSection("retargeting")}
+                className={`text-sm font-label font-medium px-4 py-2 rounded-lg transition-colors ${section === "retargeting" ? "bg-surface text-on-surface shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}
+              >
+                ✉ Retargeting
               </button>
             </div>
           </div>
@@ -641,6 +656,295 @@ export default function AdminPage() {
                 )}
               </div>
             </>
+          );
+        })()}
+
+        {section === "retargeting" && (() => {
+          const TEMPLATES = [
+            {
+              id: "relance",
+              label: "Relance douce",
+              sujet: "Tu as rejoint Le Dépôt — ta première campagne nous manque !",
+              corps: `Bonjour {prenom},
+
+Tu t'es inscrit(e) sur Le Dépôt il y a quelques jours, mais on n'a pas encore vu ta première campagne. 😊
+
+Le Dépôt, c'est la bibliothèque collaborative du contenu digital africain. Chaque campagne soumise inspire des CMs sur tout le continent.
+
+👉 Soumettre ma première campagne : https://ledepot.createevesafrica.com/soumettre
+
+C'est gratuit, rapide, et ta contribution compte vraiment.
+
+À bientôt sur Le Dépôt,
+L'équipe Createeves Africa`,
+            },
+            {
+              id: "inactif",
+              label: "Réactivation",
+              sujet: "On pense à toi — Le Dépôt s'agrandit",
+              corps: `Bonjour {prenom},
+
+Cela fait un moment qu'on ne t'a pas vu(e) sur Le Dépôt. La bibliothèque s'est bien étoffée depuis ton inscription !
+
+De nouvelles campagnes de Côte d'Ivoire, du Bénin, du Sénégal et d'ailleurs ont été ajoutées.
+
+👉 Explorer la galerie : https://ledepot.createevesafrica.com/galerie
+👉 Partager une campagne : https://ledepot.createevesafrica.com/soumettre
+
+Ton retour ferait la différence.
+
+L'équipe Createeves Africa`,
+            },
+            {
+              id: "nouveaute",
+              label: "Annonce nouveauté",
+              sujet: "Nouveauté sur Le Dépôt 🎉",
+              corps: `Bonjour {prenom},
+
+On a une bonne nouvelle pour toi : Le Dépôt vient d'être mis à jour avec de nouvelles fonctionnalités !
+
+Tu peux désormais :
+• Ajouter plusieurs images à tes campagnes
+• Modifier ou supprimer tes soumissions
+• Et bien plus encore
+
+👉 Découvrir les nouveautés : https://ledepot.createevesafrica.com
+
+Merci d'être avec nous,
+L'équipe Createeves Africa`,
+            },
+          ];
+
+          const users = tousLesUsers ?? [];
+          const now = Date.now();
+          const CINQ_JOURS = 5 * 24 * 60 * 60 * 1000;
+          const campagnesParUser = new Map<string, number>();
+          for (const c of contenus) campagnesParUser.set(c.userId, (campagnesParUser.get(c.userId) ?? 0) + 1);
+
+          const getStatut = (u: { _creationTime: number; _id: string }) => {
+            const nb = campagnesParUser.get(u._id) ?? 0;
+            if (nb > 0) return "actif";
+            if (now - u._creationTime <= CINQ_JOURS) return "relancer";
+            return "inactif";
+          };
+
+          const usersARelancer = users.filter((u) => getStatut(u) === "relancer");
+          const usersInactifs = users.filter((u) => getStatut(u) === "inactif");
+          const allSansContenu = [...usersARelancer, ...usersInactifs];
+          const cibleUsers = rtCibleFiltre === "relancer" ? usersARelancer : rtCibleFiltre === "inactif" ? usersInactifs : allSansContenu;
+
+          // Charger template dans l'éditeur quand on change de template
+          const loadedTemplate = TEMPLATES.find((t) => t.id === rtSelectedTemplate) ?? TEMPLATES[0];
+          if (rtTemplateLoaded !== rtSelectedTemplate) {
+            setTimeout(() => {
+              setRtSujet(loadedTemplate.sujet);
+              setRtCorps(loadedTemplate.corps);
+              setRtTemplateLoaded(rtSelectedTemplate);
+              setRtSelectedUsers(new Set(cibleUsers.map((u) => u.clerkId)));
+            }, 0);
+          }
+
+          const toggleUser = (clerkId: string) => {
+            setRtSelectedUsers((prev) => {
+              const next = new Set(prev);
+              if (next.has(clerkId)) next.delete(clerkId);
+              else next.add(clerkId);
+              return next;
+            });
+          };
+
+          const selectAll = () => setRtSelectedUsers(new Set(cibleUsers.map((u) => u.clerkId)));
+          const deselectAll = () => setRtSelectedUsers(new Set());
+
+          const selectedList = cibleUsers.filter((u) => rtSelectedUsers.has(u.clerkId));
+
+          const personalizePreview = (prenom: string) => {
+            const greeting = prenom.trim() ? `Bonjour ${prenom.trim()},` : "Bonjour,";
+            return rtCorps.replace(/Bonjour \{prenom\},/g, greeting).replace(/\{prenom\}/g, prenom.trim());
+          };
+
+          const handleSend = async () => {
+            if (!selectedList.length || !rtSujet || !rtCorps) return;
+            setRtSending(true);
+            setRtResult(null);
+            try {
+              const recipients = selectedList
+                .map((u) => ({
+                  email: clerkEmails[u.clerkId] ?? (u as { email?: string }).email ?? "",
+                  prenom: (u as { prenom?: string }).prenom ?? "",
+                }))
+                .filter((r) => r.email);
+
+              const res = await fetch("/api/admin/send-retargeting", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ recipients, sujet: rtSujet, corps: rtCorps }),
+              });
+              const data = await res.json();
+              if (res.ok) {
+                setRtResult({ sent: data.sent, failed: data.failed });
+                await marquerContactes({ clerkIds: selectedList.map((u) => u.clerkId) });
+              } else {
+                setRtResult({ sent: 0, failed: -1 });
+              }
+            } finally {
+              setRtSending(false);
+            }
+          };
+
+          return (
+            <div className="space-y-6">
+              {/* KPIs */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+                  <p className="font-headline font-bold text-2xl text-amber-700">{usersARelancer.length}</p>
+                  <p className="text-xs font-label text-amber-600 mt-1">À relancer <span className="opacity-70">(&lt; 5j, 0 campagne)</span></p>
+                </div>
+                <div className="bg-surface-container rounded-2xl p-4 text-center">
+                  <p className="font-headline font-bold text-2xl text-on-surface">{usersInactifs.length}</p>
+                  <p className="text-xs font-label text-on-surface-variant mt-1">Inactifs <span className="opacity-70">(&gt; 5j, 0 campagne)</span></p>
+                </div>
+                <div className="bg-primary/5 rounded-2xl p-4 text-center">
+                  <p className="font-headline font-bold text-2xl text-primary">{allSansContenu.length}</p>
+                  <p className="text-xs font-label text-on-surface-variant mt-1">Total sans campagne</p>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6 items-start">
+                {/* Colonne gauche : éditeur */}
+                <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-card space-y-5">
+                  <h2 className="font-headline font-bold text-xl text-on-surface">Composer le message</h2>
+
+                  {/* Templates */}
+                  <div>
+                    <p className="text-xs font-label text-on-surface-variant mb-2">Partir d&apos;un template</p>
+                    <div className="flex flex-wrap gap-2">
+                      {TEMPLATES.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => { setRtSelectedTemplate(t.id); setRtTemplateLoaded(""); }}
+                          className={`text-xs font-label font-medium px-3 py-1.5 rounded-xl transition-colors ${rtSelectedTemplate === t.id && rtTemplateLoaded === t.id ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"}`}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Objet */}
+                  <div>
+                    <p className="text-xs font-label text-on-surface-variant mb-1.5">Objet</p>
+                    <input
+                      value={rtSujet}
+                      onChange={(e) => setRtSujet(e.target.value)}
+                      className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      placeholder="Objet de l'email..."
+                    />
+                  </div>
+
+                  {/* Corps */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-xs font-label text-on-surface-variant">Corps</p>
+                      <span className="text-xs font-label text-primary/70 bg-primary/5 px-2 py-0.5 rounded-lg">{"{prenom}"} → prénom auto</span>
+                    </div>
+                    <textarea
+                      value={rtCorps}
+                      onChange={(e) => setRtCorps(e.target.value)}
+                      rows={12}
+                      className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                    />
+                  </div>
+
+                  {/* Aperçu personnalisé */}
+                  <div className="bg-primary/5 rounded-xl p-3">
+                    <p className="text-xs font-label text-primary mb-1.5">Aperçu — tel que reçu par &quot;Kouamé&quot;</p>
+                    <pre className="text-xs font-body text-on-surface-variant whitespace-pre-wrap leading-relaxed">{personalizePreview("Kouamé")}</pre>
+                  </div>
+                </div>
+
+                {/* Colonne droite : destinataires */}
+                <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-card space-y-4">
+                  <h2 className="font-headline font-bold text-xl text-on-surface">Destinataires</h2>
+
+                  {/* Filtre */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {([["tous", `Tous (${allSansContenu.length})`], ["relancer", `À relancer (${usersARelancer.length})`], ["inactif", `Inactifs (${usersInactifs.length})`]] as [typeof rtCibleFiltre, string][]).map(([val, label]) => (
+                      <button
+                        key={val}
+                        onClick={() => { setRtCibleFiltre(val); setRtSelectedUsers(new Set()); }}
+                        className={`text-xs font-label font-medium px-3 py-1.5 rounded-xl transition-colors ${rtCibleFiltre === val ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Sélection rapide */}
+                  <div className="flex gap-2 text-xs font-label text-primary">
+                    <button onClick={selectAll} className="hover:opacity-75">Tout sélectionner</button>
+                    <span className="text-outline-variant">·</span>
+                    <button onClick={deselectAll} className="hover:opacity-75">Désélectionner</button>
+                    <span className="ml-auto text-on-surface-variant font-medium">{rtSelectedUsers.size} sélectionné{rtSelectedUsers.size > 1 ? "s" : ""}</span>
+                  </div>
+
+                  {/* Liste utilisateurs */}
+                  <div className="space-y-1 max-h-[340px] overflow-y-auto pr-1">
+                    {cibleUsers.length === 0 ? (
+                      <p className="text-sm font-body text-on-surface-variant py-4 text-center">Aucun utilisateur dans cette catégorie.</p>
+                    ) : cibleUsers.map((u) => {
+                      const email = clerkEmails[u.clerkId] ?? (u as { email?: string }).email ?? "";
+                      const prenom = (u as { prenom?: string }).prenom ?? "";
+                      const nom = (u as { nom?: string }).nom ?? "";
+                      const nomComplet = [prenom, nom].filter(Boolean).join(" ") || "Sans nom";
+                      const dernierContact = (u as { dernier_contact_retargeting?: number }).dernier_contact_retargeting;
+                      const isSelected = rtSelectedUsers.has(u.clerkId);
+                      return (
+                        <div
+                          key={u._id}
+                          onClick={() => toggleUser(u.clerkId)}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${isSelected ? "bg-primary/10" : "hover:bg-surface-container"}`}
+                        >
+                          <div className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${isSelected ? "bg-primary border-primary" : "border-outline-variant"}`}>
+                            {isSelected && <span className="text-white text-xs leading-none">✓</span>}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-body font-medium text-on-surface truncate">{nomComplet}</p>
+                            <p className="text-xs font-body text-on-surface-variant truncate">{email || "Pas d'email"}</p>
+                          </div>
+                          {dernierContact && (
+                            <span className="text-xs font-label text-on-surface-variant/60 flex-shrink-0" title="Dernier contact">
+                              ✉ {new Date(dernierContact).toLocaleDateString("fr", { day: "numeric", month: "short" })}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Résultat envoi */}
+                  {rtResult && (
+                    <div className={`rounded-xl px-4 py-3 text-sm font-body ${rtResult.failed === -1 ? "bg-error-container text-error" : "bg-green-50 text-green-800"}`}>
+                      {rtResult.failed === -1
+                        ? "Erreur — vérifie que RESEND_API_KEY est configurée sur Vercel."
+                        : `✓ ${rtResult.sent} envoyé${rtResult.sent > 1 ? "s" : ""}${rtResult.failed > 0 ? ` · ${rtResult.failed} échoué${rtResult.failed > 1 ? "s" : ""}` : ""}`}
+                    </div>
+                  )}
+
+                  {/* Bouton envoyer */}
+                  <button
+                    onClick={handleSend}
+                    disabled={rtSending || rtSelectedUsers.size === 0 || !rtSujet || !rtCorps}
+                    className="w-full btn-gradient text-white font-label font-medium py-3 rounded-xl text-sm hover:opacity-90 transition-opacity disabled:opacity-40"
+                  >
+                    {rtSending ? "Envoi en cours..." : `Envoyer à ${rtSelectedUsers.size} personne${rtSelectedUsers.size > 1 ? "s" : ""}`}
+                  </button>
+                  <p className="text-xs font-body text-on-surface-variant">
+                    Chaque email est envoyé individuellement avec le prénom personnalisé. Nécessite RESEND_API_KEY sur Vercel.
+                  </p>
+                </div>
+              </div>
+            </div>
           );
         })()}
 

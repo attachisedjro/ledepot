@@ -18,6 +18,7 @@ export default defineSchema({
     avatar_storage_id: v.optional(v.id("_storage")),
     slug: v.optional(v.string()),
     memberNumber: v.optional(v.number()),
+    dernier_contact_retargeting: v.optional(v.number()),
   })
     .index("by_clerk_id", ["clerkId"])
     .index("by_slug", ["slug"]),
@@ -34,6 +35,8 @@ export default defineSchema({
     lien_publication: v.string(),
     visuel_url: v.optional(v.string()),
     visuel_storage_id: v.optional(v.id("_storage")),
+    images_supplementaires_storage_ids: v.optional(v.array(v.id("_storage"))),
+    images_supplementaires_urls: v.optional(v.array(v.string())),
     agence_creative: v.optional(v.string()),
     intention_creative: v.string(),
     type_contenu: v.optional(v.string()),

@@ -216,6 +216,23 @@ export const backfillUserSlugs = mutation({
   },
 });
 
+// Admin — marque des utilisateurs comme contactés
+export const marquerContactes = mutation({
+  args: { clerkIds: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    for (const clerkId of args.clerkIds) {
+      const user = await ctx.db
+        .query("users")
+        .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
+        .unique();
+      if (user) {
+        await ctx.db.patch(user._id, { dernier_contact_retargeting: now });
+      }
+    }
+  },
+});
+
 // Génère une URL d'upload pour l'avatar
 export const generateAvatarUploadUrl = mutation({
   args: {},

@@ -180,6 +180,7 @@ export const submit = mutation({
     annee: v.string(),
     lien_publication: v.string(),
     visuel_storage_id: v.optional(v.id("_storage")),
+    images_supplementaires_storage_ids: v.optional(v.array(v.id("_storage"))),
     agence_creative: v.optional(v.string()),
     intention_creative: v.string(),
     type_contenu: v.optional(v.string()),
@@ -205,6 +206,13 @@ export const submit = mutation({
     let visuel_url: string | undefined;
     if (args.visuel_storage_id) {
       visuel_url = (await ctx.storage.getUrl(args.visuel_storage_id)) ?? undefined;
+    }
+
+    let images_supplementaires_urls: string[] | undefined;
+    if (args.images_supplementaires_storage_ids?.length) {
+      images_supplementaires_urls = (
+        await Promise.all(args.images_supplementaires_storage_ids.map((id) => ctx.storage.getUrl(id)))
+      ).filter((u): u is string => u !== null);
     }
 
     // Générer un slug unique
@@ -233,6 +241,8 @@ export const submit = mutation({
       lien_publication: args.lien_publication,
       visuel_storage_id: args.visuel_storage_id,
       visuel_url,
+      images_supplementaires_storage_ids: args.images_supplementaires_storage_ids,
+      images_supplementaires_urls,
       agence_creative: args.agence_creative,
       intention_creative: args.intention_creative,
       type_contenu: args.type_contenu,
@@ -269,6 +279,9 @@ export const updateContenu = mutation({
     intention_creative: v.string(),
     type_contenu: v.optional(v.string()),
     anonyme: v.optional(v.boolean()),
+    visuel_storage_id: v.optional(v.id("_storage")),
+    images_supplementaires_storage_ids_to_add: v.optional(v.array(v.id("_storage"))),
+    images_supplementaires_index_to_remove: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const contenu = await ctx.db.get(args.id);
@@ -278,6 +291,7 @@ export const updateContenu = mutation({
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
       .unique();
     if (!user || contenu.userId !== user._id) throw new Error("Non autorisé");
+
     await ctx.db.patch(args.id, {
       titre: args.titre,
       marque: args.marque,
@@ -291,7 +305,46 @@ export const updateContenu = mutation({
       intention_creative: args.intention_creative,
       type_contenu: args.type_contenu,
       anonyme: args.anonyme ?? false,
+      ...(args.visuel_storage_id ? {
+        visuel_storage_id: args.visuel_storage_id,
+        visuel_url: (await ctx.storage.getUrl(args.visuel_storage_id)) ?? undefined,
+      } : {}),
+      ...(args.images_supplementaires_storage_ids_to_add?.length ? {
+        images_supplementaires_storage_ids: [
+          ...(contenu.images_supplementaires_storage_ids ?? []),
+          ...args.images_supplementaires_storage_ids_to_add,
+        ],
+        images_supplementaires_urls: [
+          ...(contenu.images_supplementaires_urls ?? []),
+          ...(await Promise.all(
+            args.images_supplementaires_storage_ids_to_add.map((id) => ctx.storage.getUrl(id))
+          )).filter((u): u is string => u !== null),
+        ],
+      } : {}),
+      ...(args.images_supplementaires_index_to_remove !== undefined ? (() => {
+        const idx = args.images_supplementaires_index_to_remove!;
+        const ids = [...(contenu.images_supplementaires_storage_ids ?? [])];
+        const urls = [...(contenu.images_supplementaires_urls ?? [])];
+        ids.splice(idx, 1);
+        urls.splice(idx, 1);
+        return { images_supplementaires_storage_ids: ids, images_supplementaires_urls: urls };
+      })() : {}),
     });
+  },
+});
+
+// Supprime un contenu (par son propriétaire)
+export const supprimerParContributeur = mutation({
+  args: { id: v.id("contenus"), clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const contenu = await ctx.db.get(args.id);
+    if (!contenu) throw new Error("Contenu introuvable");
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .unique();
+    if (!user || contenu.userId !== user._id) throw new Error("Non autorisé");
+    await ctx.db.delete(args.id);
   },
 });
 

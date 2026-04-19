@@ -35,6 +35,7 @@ export default function MonComptePage() {
   const updateProfile = useMutation(api.users.updateProfile);
   const generateAvatarUploadUrl = useMutation(api.users.generateAvatarUploadUrl);
   const updateContenu = useMutation(api.contenus.updateContenu);
+  const supprimerParContributeur = useMutation(api.contenus.supprimerParContributeur);
 
   const contenus = useQuery(
     api.contenus.getByUser,
@@ -50,6 +51,16 @@ export default function MonComptePage() {
   const [editingId, setEditingId] = useState<Id<"contenus"> | null>(null);
   const [editForm, setEditForm] = useState({ titre: "", marque: "", agence_creative: "", pays: "", secteur: "", occasion: "", format: "", annee: "", lien_publication: "", intention_creative: "", type_contenu: "", anonyme: false });
   const [editSaving, setEditSaving] = useState(false);
+  const [editVisuelFile, setEditVisuelFile] = useState<File | null>(null);
+  const [editVisuelPreview, setEditVisuelPreview] = useState<string | null>(null);
+  const [editVisuelCurrent, setEditVisuelCurrent] = useState<string | undefined>(undefined);
+  const [editImagesSupp, setEditImagesSupp] = useState<File[]>([]);
+  const [editImagesSuppPreviews, setEditImagesSuppPreviews] = useState<string[]>([]);
+  const [editImagesSuppExisting, setEditImagesSuppExisting] = useState<string[]>([]);
+  const [editImagesSuppRemovedIndexes, setEditImagesSuppRemovedIndexes] = useState<number[]>([]);
+  const [deletingId, setDeletingId] = useState<Id<"contenus"> | null>(null);
+  const editVisuelRef = useRef<HTMLInputElement>(null);
+  const editImagesSuppRef = useRef<HTMLInputElement>(null);
 
   // Crée le profil si inexistant, ou met à jour l'email si manquant
   useEffect(() => {
@@ -120,7 +131,7 @@ export default function MonComptePage() {
     }
   };
 
-  const startEditing = useCallback((c: { _id: Id<"contenus">; titre: string; marque: string; agence_creative?: string; pays: string; secteur: string; occasion: string; format: string; annee: string; lien_publication: string; intention_creative: string; type_contenu?: string; anonyme?: boolean }) => {
+  const startEditing = useCallback((c: { _id: Id<"contenus">; titre: string; marque: string; agence_creative?: string; pays: string; secteur: string; occasion: string; format: string; annee: string; lien_publication: string; intention_creative: string; type_contenu?: string; anonyme?: boolean; visuel_url?: string; images_supplementaires_urls?: string[] }) => {
     setEditingId(c._id);
     setEditForm({
       titre: c.titre,
@@ -136,29 +147,74 @@ export default function MonComptePage() {
       type_contenu: c.type_contenu ?? "",
       anonyme: c.anonyme ?? false,
     });
+    setEditVisuelFile(null);
+    setEditVisuelPreview(null);
+    setEditVisuelCurrent(c.visuel_url);
+    setEditImagesSupp([]);
+    setEditImagesSuppPreviews([]);
+    setEditImagesSuppExisting(c.images_supplementaires_urls ?? []);
+    setEditImagesSuppRemovedIndexes([]);
   }, []);
+
+  const generateUploadUrl = useMutation(api.contenus.generateUploadUrl);
 
   const handleEditSave = async () => {
     if (!user || !editingId) return;
     setEditSaving(true);
-    await updateContenu({
-      id: editingId,
-      clerkId: user.id,
-      titre: editForm.titre,
-      marque: editForm.marque,
-      agence_creative: editForm.agence_creative || undefined,
-      pays: editForm.pays,
-      secteur: editForm.secteur,
-      occasion: editForm.occasion,
-      format: editForm.format,
-      annee: editForm.annee,
-      lien_publication: editForm.lien_publication,
-      intention_creative: editForm.intention_creative,
-      type_contenu: editForm.type_contenu || undefined,
-      anonyme: editForm.anonyme,
-    });
-    setEditSaving(false);
-    setEditingId(null);
+    try {
+      let newVisuelStorageId: string | undefined;
+      if (editVisuelFile) {
+        const uploadUrl = await generateUploadUrl();
+        const res = await fetch(uploadUrl, { method: "POST", headers: { "Content-Type": editVisuelFile.type }, body: editVisuelFile });
+        const { storageId } = await res.json();
+        newVisuelStorageId = storageId;
+      }
+
+      const newSuppStorageIds: string[] = [];
+      for (const f of editImagesSupp) {
+        const uploadUrl = await generateUploadUrl();
+        const res = await fetch(uploadUrl, { method: "POST", headers: { "Content-Type": f.type }, body: f });
+        const { storageId } = await res.json();
+        newSuppStorageIds.push(storageId);
+      }
+
+      // Apply removals one by one (highest index first to avoid shifting)
+      const sortedRemovals = [...editImagesSuppRemovedIndexes].sort((a, b) => b - a);
+      for (const idx of sortedRemovals) {
+        await updateContenu({
+          id: editingId,
+          clerkId: user.id,
+          ...editForm,
+          agence_creative: editForm.agence_creative || undefined,
+          type_contenu: editForm.type_contenu || undefined,
+          images_supplementaires_index_to_remove: idx,
+        });
+      }
+
+      await updateContenu({
+        id: editingId,
+        clerkId: user.id,
+        ...editForm,
+        agence_creative: editForm.agence_creative || undefined,
+        type_contenu: editForm.type_contenu || undefined,
+        ...(newVisuelStorageId ? { visuel_storage_id: newVisuelStorageId as Parameters<typeof updateContenu>[0]["visuel_storage_id"] } : {}),
+        ...(newSuppStorageIds.length ? { images_supplementaires_storage_ids_to_add: newSuppStorageIds as Parameters<typeof updateContenu>[0]["images_supplementaires_storage_ids_to_add"] } : {}),
+      });
+    } finally {
+      setEditSaving(false);
+      setEditingId(null);
+    }
+  };
+
+  const handleDelete = async (id: Id<"contenus">, titre: string) => {
+    if (!user) return;
+    if (!confirm(`Supprimer définitivement "${titre}" ? Cette action est irréversible.`)) return;
+    setDeletingId(id);
+    try {
+      await supprimerParContributeur({ id, clerkId: user.id });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleSave = async () => {
@@ -506,18 +562,101 @@ export default function MonComptePage() {
                           {c.anonyme && <span className="text-xs font-label text-on-surface-variant/60 bg-surface-container px-2 py-0.5 rounded-full">Anonyme</span>}
                         </div>
                       </div>
-                      <button
-                        onClick={() => editingId === c._id ? setEditingId(null) : startEditing(c)}
-                        className="text-xs font-label font-medium bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-xl hover:bg-surface-container-high transition-colors flex-shrink-0"
-                      >
-                        {editingId === c._id ? "Fermer" : "Modifier"}
-                      </button>
+                      <div className="flex flex-col gap-1.5 flex-shrink-0">
+                        <button
+                          onClick={() => editingId === c._id ? setEditingId(null) : startEditing(c)}
+                          className="text-xs font-label font-medium bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-xl hover:bg-surface-container-high transition-colors"
+                        >
+                          {editingId === c._id ? "Fermer" : "Modifier"}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(c._id, c.titre)}
+                          disabled={deletingId === c._id}
+                          className="text-xs font-label font-medium bg-error-container text-error px-3 py-1.5 rounded-xl hover:opacity-80 transition-opacity disabled:opacity-50"
+                        >
+                          {deletingId === c._id ? "..." : "Supprimer"}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Formulaire d'édition inline */}
                     {editingId === c._id && (
                       <div className="border-t border-outline-variant/20 px-4 pb-4 pt-4 space-y-3">
                         <p className="text-xs font-label font-bold text-on-surface-variant uppercase tracking-wider mb-3">Modifier la soumission</p>
+
+                        {/* Image principale */}
+                        <div>
+                          <p className="text-xs font-label text-on-surface-variant mb-1.5">Image principale</p>
+                          <div
+                            onClick={() => editVisuelRef.current?.click()}
+                            className="relative bg-surface-container rounded-xl overflow-hidden cursor-pointer hover:bg-surface-container-high transition-colors flex items-center justify-center h-32"
+                          >
+                            {editVisuelPreview || editVisuelCurrent ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={editVisuelPreview ?? editVisuelCurrent!} alt="visuel" className="h-full w-full object-cover" />
+                            ) : (
+                              <p className="text-xs font-label text-on-surface-variant">Clique pour changer l&apos;image</p>
+                            )}
+                            <div className="absolute inset-0 bg-black/30 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-white text-xs font-label">Changer</span>
+                            </div>
+                          </div>
+                          <input ref={editVisuelRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (!f) return;
+                            if (f.size > 5 * 1024 * 1024) return;
+                            setEditVisuelFile(f);
+                            setEditVisuelPreview(URL.createObjectURL(f));
+                          }} />
+                        </div>
+
+                        {/* Images supplémentaires */}
+                        <div>
+                          <p className="text-xs font-label text-on-surface-variant mb-1.5">Images supplémentaires <span className="opacity-60">(optionnel)</span></p>
+                          <div className="flex flex-wrap gap-2">
+                            {editImagesSuppExisting.map((url, idx) => (
+                              !editImagesSuppRemovedIndexes.includes(idx) && (
+                                <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden group">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={url} alt="" className="w-full h-full object-cover" />
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditImagesSuppRemovedIndexes(prev => [...prev, idx])}
+                                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-lg"
+                                  >×</button>
+                                </div>
+                              )
+                            ))}
+                            {editImagesSuppPreviews.map((url, idx) => (
+                              <div key={`new-${idx}`} className="relative w-16 h-16 rounded-xl overflow-hidden group">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={url} alt="" className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditImagesSupp(prev => prev.filter((_, i) => i !== idx));
+                                    setEditImagesSuppPreviews(prev => prev.filter((_, i) => i !== idx));
+                                  }}
+                                  className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-lg"
+                                >×</button>
+                              </div>
+                            ))}
+                            {(editImagesSuppExisting.length - editImagesSuppRemovedIndexes.length + editImagesSupp.length) < 5 && (
+                              <button
+                                type="button"
+                                onClick={() => editImagesSuppRef.current?.click()}
+                                className="w-16 h-16 rounded-xl bg-surface-container border-2 border-dashed border-outline-variant flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors text-xl"
+                              >+</button>
+                            )}
+                          </div>
+                          <input ref={editImagesSuppRef} type="file" accept="image/jpeg,image/png" multiple className="hidden" onChange={(e) => {
+                            const files = Array.from(e.target.files ?? []);
+                            const valid = files.filter(f => f.size <= 5 * 1024 * 1024).slice(0, 5 - editImagesSupp.length);
+                            setEditImagesSupp(prev => [...prev, ...valid]);
+                            setEditImagesSuppPreviews(prev => [...prev, ...valid.map(f => URL.createObjectURL(f))]);
+                          }} />
+                        </div>
+
                         <input value={editForm.titre} onChange={(e) => setEditForm(f => ({ ...f, titre: e.target.value }))} placeholder="Titre" className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30" />
                         <div className="grid grid-cols-2 gap-3">
                           <input value={editForm.marque} onChange={(e) => setEditForm(f => ({ ...f, marque: e.target.value }))} placeholder="Annonceur / Marque" className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30" />

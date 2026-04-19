@@ -55,6 +55,7 @@ export default function SoumettreePage() {
   const { user } = useUser();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imagesSuppRef = useRef<HTMLInputElement>(null);
 
   const generateUploadUrl = useMutation(api.contenus.generateUploadUrl);
   const submit = useMutation(api.contenus.submit);
@@ -76,6 +77,8 @@ export default function SoumettreePage() {
   const [anonyme, setAnonyme] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [imagesSupp, setImagesSupp] = useState<File[]>([]);
+  const [imagesSuppPreviews, setImagesSuppPreviews] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -123,6 +126,14 @@ export default function SoumettreePage() {
       });
       const { storageId } = await res.json();
 
+      const suppIds: string[] = [];
+      for (const f of imagesSupp) {
+        const suppUploadUrl = await generateUploadUrl();
+        const suppRes = await fetch(suppUploadUrl, { method: "POST", headers: { "Content-Type": f.type }, body: f });
+        const { storageId: suppStorageId } = await suppRes.json();
+        suppIds.push(suppStorageId);
+      }
+
       const id = await submit({
         clerkId: user.id,
         prenom: user.firstName ?? "",
@@ -130,6 +141,7 @@ export default function SoumettreePage() {
         ...form,
         occasion: form.occasion === "Autre" ? occasionLibre.trim() : form.occasion,
         visuel_storage_id: storageId,
+        images_supplementaires_storage_ids: suppIds.length ? suppIds as Parameters<typeof submit>[0]["images_supplementaires_storage_ids"] : undefined,
         agence_creative: form.agence_creative || undefined,
         type_contenu: form.type_contenu || undefined,
         anonyme,
@@ -261,6 +273,41 @@ export default function SoumettreePage() {
               )}
             </div>
             <input ref={fileInputRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={handleFile} />
+          </div>
+
+          {/* Images supplémentaires */}
+          <div>
+            <Label>Images supplémentaires <span className="text-on-surface-variant/60 font-normal">(optionnel, max 5)</span></Label>
+            <div className="flex flex-wrap gap-2">
+              {imagesSuppPreviews.map((url, idx) => (
+                <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden group">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImagesSupp(prev => prev.filter((_, i) => i !== idx));
+                      setImagesSuppPreviews(prev => prev.filter((_, i) => i !== idx));
+                    }}
+                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-2xl"
+                  >×</button>
+                </div>
+              ))}
+              {imagesSupp.length < 5 && (
+                <div
+                  onClick={() => imagesSuppRef.current?.click()}
+                  className="w-20 h-20 rounded-xl bg-surface-container border-2 border-dashed border-outline-variant flex flex-col items-center justify-center cursor-pointer hover:bg-surface-container-high transition-colors gap-1"
+                >
+                  <span className="text-on-surface-variant text-xl leading-none">+</span>
+                  <span className="text-xs font-label text-on-surface-variant">Ajouter</span>
+                </div>
+              )}
+            </div>
+            <input ref={imagesSuppRef} type="file" accept="image/jpeg,image/png" multiple className="hidden" onChange={(e) => {
+              const files = Array.from(e.target.files ?? []).filter(f => f.size <= 5 * 1024 * 1024).slice(0, 5 - imagesSupp.length);
+              setImagesSupp(prev => [...prev, ...files]);
+              setImagesSuppPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
+            }} />
           </div>
 
           {/* Intention créative */}
