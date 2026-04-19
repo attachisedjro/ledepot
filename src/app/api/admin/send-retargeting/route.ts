@@ -41,12 +41,9 @@ export async function POST(req: Request) {
       ? `Bonjour ${recipient.prenom.trim()},`
       : "Bonjour,";
 
-    const personalizedBody = corps.replace(/\{prenom\}/g, recipient.prenom?.trim() ?? "").replace(/Bonjour,/, greeting).replace(/^Bonjour\n/, greeting + "\n");
-
-    // Si le template commence déjà par "Bonjour", on remplace la première ligne
-    const finalBody = personalizedBody.startsWith("Bonjour")
-      ? personalizedBody
-      : greeting + "\n\n" + personalizedBody;
+    const finalBody = corps
+      .replace(/Bonjour \{prenom\},/g, greeting)
+      .replace(/\{prenom\}/g, recipient.prenom?.trim() ?? "");
 
     try {
       await resend.emails.send({
@@ -59,6 +56,9 @@ export async function POST(req: Request) {
     } catch (err) {
       results.push({ email: recipient.email, ok: false, error: err instanceof Error ? err.message : "Erreur" });
     }
+
+    // Respecter la limite de 5 req/sec de Resend
+    await new Promise((r) => setTimeout(r, 220));
   }
 
   const sent = results.filter((r) => r.ok).length;
