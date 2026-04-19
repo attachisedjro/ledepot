@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL ?? "Le Dépôt <noreply@ledepot.createevesafrica.com>";
+  const from = "Le Depot <noreply@createevesafrica.com>";
 
   if (!apiKey || apiKey === "re_REMPLACE_PAR_TA_CLE") {
     return NextResponse.json({ error: "RESEND_API_KEY non configurée" }, { status: 503 });
