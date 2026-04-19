@@ -242,7 +242,7 @@ export default function AdminPage() {
   const [showExport, setShowExport] = useState(false);
   const [clerkEmails, setClerkEmails] = useState<Record<string, string>>({});
   const [rtSelectedTemplate, setRtSelectedTemplate] = useState("relance");
-  const [rtCibleFiltre, setRtCibleFiltre] = useState<"relancer" | "inactif" | "tous">("tous");
+  const [rtCibleFiltre, setRtCibleFiltre] = useState<"sans_campagne" | "relancer" | "inactif" | "debut" | "actif" | "expert" | "tous">("sans_campagne");
   const [rtSujet, setRtSujet] = useState("");
   const [rtCorps, setRtCorps] = useState("");
   const [rtTemplateLoaded, setRtTemplateLoaded] = useState("");
@@ -664,6 +664,7 @@ export default function AdminPage() {
             {
               id: "relance",
               label: "Relance douce",
+              segment: "sans_campagne",
               sujet: "Tu as rejoint Le Dépôt — ta première campagne nous manque !",
               corps: `Bonjour {prenom},
 
@@ -681,6 +682,7 @@ L'équipe Createeves Africa`,
             {
               id: "inactif",
               label: "Réactivation",
+              segment: "sans_campagne",
               sujet: "On pense à toi — Le Dépôt s'agrandit",
               corps: `Bonjour {prenom},
 
@@ -696,12 +698,102 @@ Ton retour ferait la différence.
 L'équipe Createeves Africa`,
             },
             {
+              id: "lance_toi",
+              label: "Lance-toi",
+              segment: "debut",
+              sujet: "Ta première campagne a été vue — et si tu en soumettais une deuxième ?",
+              corps: `Bonjour {prenom},
+
+Ta première campagne sur Le Dépôt a déjà été consultée par des CMs sur tout le continent. Merci pour ta contribution !
+
+Une petite info : le badge ⭐⭐ Contributeur est à seulement 2 campagnes publiées. Tu y es presque.
+
+👉 Soumettre une nouvelle campagne : https://ledepot.createevesafrica.com/soumettre
+
+Chaque campagne que tu partages élève le niveau de tout le continent.
+
+À bientôt,
+L'équipe Createeves Africa`,
+            },
+            {
+              id: "continue",
+              label: "Continue sur ta lancée",
+              segment: "actif",
+              sujet: "Tu fais partie des meilleurs contributeurs du Dépôt 💪",
+              corps: `Bonjour {prenom},
+
+Tes campagnes sur Le Dépôt font une vraie différence. Des CMs de tout le continent s'en inspirent au quotidien.
+
+Le badge ⭐⭐⭐ Expert est à 10 campagnes publiées. Tu es sur la bonne voie.
+
+👉 Continuer à contribuer : https://ledepot.createevesafrica.com/soumettre
+
+Et si tu as des collègues qui créent du bon contenu, invite-les — la bibliothèque grandit grâce à des gens comme toi.
+
+À bientôt,
+L'équipe Createeves Africa`,
+            },
+            {
+              id: "expert",
+              label: "Merci Expert",
+              segment: "expert",
+              sujet: "Tu es l'un des piliers du Dépôt — merci 🙏",
+              corps: `Bonjour {prenom},
+
+10 campagnes ou plus sur Le Dépôt. Tu fais partie des contributeurs les plus engagés de la plateforme, et ça se voit dans les chiffres.
+
+Ton travail inspire des CMs à Dakar, Abidjan, Cotonou, Douala et au-delà.
+
+Une faveur : est-ce que tu pourrais parler du Dépôt à 2 ou 3 collègues community managers ? Une simple recommandation de ta part pèse bien plus qu'une pub.
+
+👉 Le Dépôt : https://ledepot.createevesafrica.com
+
+Merci d'être là depuis le début.
+
+L'équipe Createeves Africa`,
+            },
+            {
+              id: "profil",
+              label: "Complète ton profil",
+              segment: "tous",
+              sujet: "Ton profil sur Le Dépôt est presque complet 👤",
+              corps: `Bonjour {prenom},
+
+On a remarqué que ton profil sur Le Dépôt n'est pas encore complet. Un profil avec une photo, une bio et tes réseaux sociaux te rend beaucoup plus visible auprès des autres CMs.
+
+👉 Compléter mon profil : https://ledepot.createevesafrica.com/mon-compte
+
+Ça prend 2 minutes et ça fait toute la différence.
+
+À bientôt,
+L'équipe Createeves Africa`,
+            },
+            {
+              id: "ambassadeur",
+              label: "Invite tes collègues",
+              segment: "tous",
+              sujet: "Tu connais des CMs qui méritent d'être sur Le Dépôt ?",
+              corps: `Bonjour {prenom},
+
+Le Dépôt grandit chaque semaine, mais on sait qu'il y a encore beaucoup de talent sur le continent qui n'est pas encore référencé.
+
+Est-ce que tu as des collègues community managers dont tu admires le travail ? Dis-leur que Le Dépôt existe.
+
+👉 Partager Le Dépôt : https://ledepot.createevesafrica.com
+
+Chaque nouvelle voix enrichit la bibliothèque pour tous.
+
+Merci,
+L'équipe Createeves Africa`,
+            },
+            {
               id: "nouveaute",
               label: "Annonce nouveauté",
+              segment: "tous",
               sujet: "Nouveauté sur Le Dépôt 🎉",
               corps: `Bonjour {prenom},
 
-On a une bonne nouvelle pour toi : Le Dépôt vient d'être mis à jour avec de nouvelles fonctionnalités !
+Le Dépôt vient d'être mis à jour avec de nouvelles fonctionnalités !
 
 Tu peux désormais :
 • Ajouter plusieurs images à tes campagnes
@@ -719,19 +811,32 @@ L'équipe Createeves Africa`,
           const now = Date.now();
           const CINQ_JOURS = 5 * 24 * 60 * 60 * 1000;
           const campagnesParUser = new Map<string, number>();
-          for (const c of contenus) campagnesParUser.set(c.userId, (campagnesParUser.get(c.userId) ?? 0) + 1);
+          for (const c of publiés) campagnesParUser.set(c.userId, (campagnesParUser.get(c.userId) ?? 0) + 1);
 
-          const getStatut = (u: { _creationTime: number; _id: string }) => {
+          const usersARelancer = users.filter((u) => {
             const nb = campagnesParUser.get(u._id) ?? 0;
-            if (nb > 0) return "actif";
-            if (now - u._creationTime <= CINQ_JOURS) return "relancer";
-            return "inactif";
-          };
-
-          const usersARelancer = users.filter((u) => getStatut(u) === "relancer");
-          const usersInactifs = users.filter((u) => getStatut(u) === "inactif");
+            return nb === 0 && now - u._creationTime <= CINQ_JOURS;
+          });
+          const usersInactifs = users.filter((u) => {
+            const nb = campagnesParUser.get(u._id) ?? 0;
+            return nb === 0 && now - u._creationTime > CINQ_JOURS;
+          });
           const allSansContenu = [...usersARelancer, ...usersInactifs];
-          const cibleUsers = rtCibleFiltre === "relancer" ? usersARelancer : rtCibleFiltre === "inactif" ? usersInactifs : allSansContenu;
+          const usersDebut = users.filter((u) => (campagnesParUser.get(u._id) ?? 0) === 1);
+          const usersActifs = users.filter((u) => { const nb = campagnesParUser.get(u._id) ?? 0; return nb >= 2 && nb <= 10; });
+          const usersExperts = users.filter((u) => (campagnesParUser.get(u._id) ?? 0) > 10);
+
+          const SEGMENTS = [
+            { id: "sans_campagne" as const, label: `Sans campagne (${allSansContenu.length})`, users: allSansContenu },
+            { id: "relancer" as const, label: `À relancer (${usersARelancer.length})`, users: usersARelancer },
+            { id: "inactif" as const, label: `Inactifs (${usersInactifs.length})`, users: usersInactifs },
+            { id: "debut" as const, label: `1 campagne (${usersDebut.length})`, users: usersDebut },
+            { id: "actif" as const, label: `2–10 campagnes (${usersActifs.length})`, users: usersActifs },
+            { id: "expert" as const, label: `10+ campagnes (${usersExperts.length})`, users: usersExperts },
+            { id: "tous" as const, label: `Tous les membres (${users.length})`, users },
+          ];
+
+          const cibleUsers = SEGMENTS.find((s) => s.id === rtCibleFiltre)?.users ?? allSansContenu;
 
           // Charger template dans l'éditeur quand on change de template
           const loadedTemplate = TEMPLATES.find((t) => t.id === rtSelectedTemplate) ?? TEMPLATES[0];
@@ -795,18 +900,30 @@ L'équipe Createeves Africa`,
           return (
             <div className="space-y-6">
               {/* KPIs */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
-                  <p className="font-headline font-bold text-2xl text-amber-700">{usersARelancer.length}</p>
-                  <p className="text-xs font-label text-amber-600 mt-1">À relancer <span className="opacity-70">(&lt; 5j, 0 campagne)</span></p>
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-center">
+                  <p className="font-headline font-bold text-xl text-amber-700">{usersARelancer.length}</p>
+                  <p className="text-xs font-label text-amber-600 mt-0.5">À relancer</p>
                 </div>
-                <div className="bg-surface-container rounded-2xl p-4 text-center">
-                  <p className="font-headline font-bold text-2xl text-on-surface">{usersInactifs.length}</p>
-                  <p className="text-xs font-label text-on-surface-variant mt-1">Inactifs <span className="opacity-70">(&gt; 5j, 0 campagne)</span></p>
+                <div className="bg-surface-container rounded-2xl p-3 text-center">
+                  <p className="font-headline font-bold text-xl text-on-surface">{usersInactifs.length}</p>
+                  <p className="text-xs font-label text-on-surface-variant mt-0.5">Inactifs</p>
                 </div>
-                <div className="bg-primary/5 rounded-2xl p-4 text-center">
-                  <p className="font-headline font-bold text-2xl text-primary">{allSansContenu.length}</p>
-                  <p className="text-xs font-label text-on-surface-variant mt-1">Total sans campagne</p>
+                <div className="bg-primary/5 rounded-2xl p-3 text-center">
+                  <p className="font-headline font-bold text-xl text-primary">{usersDebut.length}</p>
+                  <p className="text-xs font-label text-on-surface-variant mt-0.5">1 campagne</p>
+                </div>
+                <div className="bg-green-50 rounded-2xl p-3 text-center">
+                  <p className="font-headline font-bold text-xl text-green-700">{usersActifs.length}</p>
+                  <p className="text-xs font-label text-green-600 mt-0.5">2–10 campagnes</p>
+                </div>
+                <div className="bg-surface-container-lowest border border-amber-200 rounded-2xl p-3 text-center">
+                  <p className="font-headline font-bold text-xl text-amber-600">{usersExperts.length}</p>
+                  <p className="text-xs font-label text-amber-500 mt-0.5">Experts 10+</p>
+                </div>
+                <div className="bg-surface-container rounded-2xl p-3 text-center">
+                  <p className="font-headline font-bold text-xl text-on-surface">{users.length}</p>
+                  <p className="text-xs font-label text-on-surface-variant mt-0.5">Total membres</p>
                 </div>
               </div>
 
@@ -829,6 +946,11 @@ L'équipe Createeves Africa`,
                         </button>
                       ))}
                     </div>
+                    {rtTemplateLoaded && (
+                      <p className="text-xs font-label text-on-surface-variant/60 mt-1.5">
+                        Suggéré pour : <span className="text-primary">{SEGMENTS.find((s) => s.id === TEMPLATES.find((t) => t.id === rtSelectedTemplate)?.segment)?.label ?? "Tous"}</span>
+                      </p>
+                    )}
                   </div>
 
                   {/* Objet */}
@@ -867,15 +989,15 @@ L'équipe Createeves Africa`,
                 <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-card space-y-4">
                   <h2 className="font-headline font-bold text-xl text-on-surface">Destinataires</h2>
 
-                  {/* Filtre */}
+                  {/* Filtre segments */}
                   <div className="flex flex-wrap gap-1.5">
-                    {([["tous", `Tous (${allSansContenu.length})`], ["relancer", `À relancer (${usersARelancer.length})`], ["inactif", `Inactifs (${usersInactifs.length})`]] as [typeof rtCibleFiltre, string][]).map(([val, label]) => (
+                    {SEGMENTS.map((s) => (
                       <button
-                        key={val}
-                        onClick={() => { setRtCibleFiltre(val); setRtSelectedUsers(new Set()); }}
-                        className={`text-xs font-label font-medium px-3 py-1.5 rounded-xl transition-colors ${rtCibleFiltre === val ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"}`}
+                        key={s.id}
+                        onClick={() => { setRtCibleFiltre(s.id); setRtSelectedUsers(new Set()); }}
+                        className={`text-xs font-label font-medium px-3 py-1.5 rounded-xl transition-colors ${rtCibleFiltre === s.id ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"}`}
                       >
-                        {label}
+                        {s.label}
                       </button>
                     ))}
                   </div>
