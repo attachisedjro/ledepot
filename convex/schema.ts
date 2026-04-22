@@ -51,6 +51,7 @@ export default defineSchema({
     slug: v.optional(v.string()),
     campagne_du_jour: v.optional(v.boolean()),
     coup_de_coeur: v.optional(v.boolean()),
+    co_contributeurs_clerk_ids: v.optional(v.array(v.string())),
   })
     .index("by_user", ["userId"])
     .index("by_statut", ["statut"])

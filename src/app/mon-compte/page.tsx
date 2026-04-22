@@ -3,7 +3,7 @@
 import { useUser } from "@clerk/nextjs";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/layout/Navbar";
@@ -42,6 +42,11 @@ export default function MonComptePage() {
     userProfile ? { userId: userProfile._id } : "skip"
   );
   const tousContenus = useQuery(api.contenus.list, {});
+  const coContenus = useQuery(
+    api.contenus.getByCoContributeurClerkId,
+    user ? { clerkId: user.id } : "skip"
+  );
+  const allUsers = useQuery(api.users.listAll, {});
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ nom: "", prenom: "", poste: "", pays: "", bio: "", linkedin_url: "", facebook_url: "", x_url: "", instagram_url: "" });
@@ -59,6 +64,8 @@ export default function MonComptePage() {
   const [editImagesSuppExisting, setEditImagesSuppExisting] = useState<string[]>([]);
   const [editImagesSuppRemovedIndexes, setEditImagesSuppRemovedIndexes] = useState<number[]>([]);
   const [deletingId, setDeletingId] = useState<Id<"contenus"> | null>(null);
+  const [editCoContribs, setEditCoContribs] = useState<string[]>([]);
+  const [coSearch, setCoSearch] = useState("");
   const editVisuelRef = useRef<HTMLInputElement>(null);
   const editImagesSuppRef = useRef<HTMLInputElement>(null);
 
@@ -131,7 +138,7 @@ export default function MonComptePage() {
     }
   };
 
-  const startEditing = useCallback((c: { _id: Id<"contenus">; titre: string; marque: string; agence_creative?: string; pays: string; secteur: string; occasion: string; format: string; annee: string; lien_publication: string; intention_creative: string; type_contenu?: string; anonyme?: boolean; visuel_url?: string; images_supplementaires_urls?: string[] }) => {
+  const startEditing = useCallback((c: { _id: Id<"contenus">; titre: string; marque: string; agence_creative?: string; pays: string; secteur: string; occasion: string; format: string; annee: string; lien_publication: string; intention_creative: string; type_contenu?: string; anonyme?: boolean; visuel_url?: string; images_supplementaires_urls?: string[]; co_contributeurs_clerk_ids?: string[] }) => {
     setEditingId(c._id);
     setEditForm({
       titre: c.titre,
@@ -154,9 +161,23 @@ export default function MonComptePage() {
     setEditImagesSuppPreviews([]);
     setEditImagesSuppExisting(c.images_supplementaires_urls ?? []);
     setEditImagesSuppRemovedIndexes([]);
+    setEditCoContribs(c.co_contributeurs_clerk_ids ?? []);
+    setCoSearch("");
   }, []);
 
   const generateUploadUrl = useMutation(api.contenus.generateUploadUrl);
+
+  const coSearchResults = useMemo(() => {
+    if (!coSearch.trim() || !allUsers) return [];
+    const q = coSearch.toLowerCase();
+    return allUsers
+      .filter((u) =>
+        u.clerkId !== user?.id &&
+        !editCoContribs.includes(u.clerkId) &&
+        (`${u.prenom} ${u.nom}`.toLowerCase().includes(q))
+      )
+      .slice(0, 5);
+  }, [coSearch, allUsers, user?.id, editCoContribs]);
 
   const handleEditSave = async () => {
     if (!user || !editingId) return;
@@ -199,6 +220,7 @@ export default function MonComptePage() {
         type_contenu: editForm.type_contenu || undefined,
         ...(newVisuelStorageId ? { visuel_storage_id: newVisuelStorageId as Parameters<typeof updateContenu>[0]["visuel_storage_id"] } : {}),
         ...(newSuppStorageIds.length ? { images_supplementaires_storage_ids_to_add: newSuppStorageIds as Parameters<typeof updateContenu>[0]["images_supplementaires_storage_ids_to_add"] } : {}),
+        co_contributeurs_clerk_ids: editCoContribs,
       });
     } finally {
       setEditSaving(false);
@@ -515,8 +537,9 @@ export default function MonComptePage() {
             </Link>
           </div>
 
-          {/* Mes soumissions */}
-          <div className="md:col-span-2">
+          {/* Mes soumissions + Mes collaborations */}
+          <div className="md:col-span-2 space-y-10">
+            <div>
             <h2 className="font-headline font-bold text-2xl text-on-surface mb-6">Mes soumissions</h2>
 
             {!contenus || contenus.length === 0 ? (
@@ -689,6 +712,62 @@ export default function MonComptePage() {
                           </div>
                           <span className="text-xs font-body text-on-surface-variant">Contribution anonyme</span>
                         </div>
+
+                        {/* Co-contributeurs — visible uniquement pour le propriétaire */}
+                        {userProfile && c.userId === userProfile._id && (
+                          <div>
+                            <p className="text-xs font-label text-on-surface-variant mb-1.5">Co-contributeurs <span className="opacity-60">(collaborateurs sur cette campagne)</span></p>
+                            {/* Chips des co-contributeurs sélectionnés */}
+                            {editCoContribs.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mb-2">
+                                {editCoContribs.map((clerkId) => {
+                                  const u = allUsers?.find((x) => x.clerkId === clerkId);
+                                  return (
+                                    <span key={clerkId} className="flex items-center gap-1 bg-primary/10 text-primary text-xs font-label px-2 py-1 rounded-full">
+                                      {u ? `${u.prenom} ${u.nom}` : clerkId}
+                                      <button type="button" onClick={() => setEditCoContribs(prev => prev.filter(id => id !== clerkId))} className="hover:opacity-60 ml-0.5">×</button>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {/* Recherche */}
+                            <div className="relative">
+                              <input
+                                value={coSearch}
+                                onChange={(e) => setCoSearch(e.target.value)}
+                                placeholder="Chercher un membre par nom..."
+                                className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-on-surface-variant/50"
+                              />
+                              {coSearchResults.length > 0 && (
+                                <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-ambient border border-outline-variant/20 overflow-hidden">
+                                  {coSearchResults.map((u) => (
+                                    <button
+                                      key={u._id}
+                                      type="button"
+                                      onClick={() => { setEditCoContribs(prev => [...prev, u.clerkId]); setCoSearch(""); }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-surface-container transition-colors"
+                                    >
+                                      <div className="w-6 h-6 rounded-lg bg-surface-container flex-shrink-0 relative overflow-hidden">
+                                        {u.avatar_url ? (
+                                          // eslint-disable-next-line @next/next/no-img-element
+                                          <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-primary">{u.prenom.charAt(0)}</span>
+                                        )}
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-body text-on-surface">{u.prenom} {u.nom}</p>
+                                        {u.poste && <p className="text-xs font-label text-on-surface-variant">{u.poste}</p>}
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex gap-2 pt-1">
                           <button onClick={handleEditSave} disabled={editSaving} className="flex-1 btn-gradient text-white text-sm font-label font-medium py-2.5 rounded-xl disabled:opacity-60">
                             {editSaving ? "..." : "Enregistrer"}
@@ -701,6 +780,75 @@ export default function MonComptePage() {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+            </div>
+
+            {/* Mes collaborations */}
+            {coContenus && coContenus.length > 0 && (
+              <div>
+                <h2 className="font-headline font-bold text-2xl text-on-surface mb-2">Mes collaborations</h2>
+                <p className="text-xs font-body text-on-surface-variant mb-6">Campagnes sur lesquelles tu as été ajouté comme co-contributeur.</p>
+                <div className="space-y-4">
+                  {coContenus.map((c) => (
+                    <div key={c._id} className="bg-surface-container-lowest rounded-2xl shadow-card overflow-hidden">
+                      <div className="p-4 flex gap-4 items-start">
+                        <div className="w-16 h-16 rounded-xl bg-surface-container flex-shrink-0 relative overflow-hidden">
+                          {c.visuel_url ? (
+                            <Image src={c.visuel_url} alt={c.titre} fill className="object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="text-on-surface-variant/30 font-headline">{c.marque.charAt(0)}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <Link href={`/contenu/${c.slug ?? c._id}`} className="font-headline font-bold text-base text-on-surface hover:text-primary transition-colors line-clamp-1">
+                            {c.titre}
+                          </Link>
+                          <p className="text-xs font-body text-on-surface-variant mt-1">{c.marque} · {c.pays} · {c.annee}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs font-label bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full">
+                              Collaborateur
+                            </span>
+                            {c.user && (
+                              <span className="text-xs font-body text-on-surface-variant">
+                                par {c.user.prenom} {c.user.nom}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1.5 flex-shrink-0">
+                          <button
+                            onClick={() => editingId === c._id ? setEditingId(null) : startEditing(c)}
+                            className="text-xs font-label font-medium bg-surface-container text-on-surface-variant px-3 py-1.5 rounded-xl hover:bg-surface-container-high transition-colors"
+                          >
+                            {editingId === c._id ? "Fermer" : "Modifier"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Formulaire d'édition pour co-contributeur */}
+                      {editingId === c._id && (
+                        <div className="border-t border-outline-variant/20 px-4 pb-4 pt-4 space-y-3">
+                          <p className="text-xs font-label font-bold text-on-surface-variant uppercase tracking-wider mb-3">Modifier la soumission</p>
+                          <input value={editForm.titre} onChange={(e) => setEditForm(f => ({ ...f, titre: e.target.value }))} placeholder="Titre" className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                          <input value={editForm.marque} onChange={(e) => setEditForm(f => ({ ...f, marque: e.target.value }))} placeholder="Annonceur / Marque" className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                          <input value={editForm.lien_publication} onChange={(e) => setEditForm(f => ({ ...f, lien_publication: e.target.value }))} placeholder="Lien de publication" type="url" className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                          <textarea value={editForm.intention_creative} onChange={(e) => setEditForm(f => ({ ...f, intention_creative: e.target.value }))} placeholder="Intention créative" rows={3} maxLength={700} className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
+                          <div className="flex gap-2 pt-1">
+                            <button onClick={handleEditSave} disabled={editSaving} className="flex-1 btn-gradient text-white text-sm font-label font-medium py-2.5 rounded-xl disabled:opacity-60">
+                              {editSaving ? "..." : "Enregistrer"}
+                            </button>
+                            <button onClick={() => setEditingId(null)} className="px-4 bg-surface-container text-on-surface text-sm font-label rounded-xl">
+                              Annuler
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useUser } from "@clerk/nextjs";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
@@ -59,6 +59,7 @@ export default function SoumettreePage() {
 
   const generateUploadUrl = useMutation(api.contenus.generateUploadUrl);
   const submit = useMutation(api.contenus.submit);
+  const allUsers = useQuery(api.users.listAll, {});
 
   const [form, setForm] = useState({
     titre: "",
@@ -79,8 +80,22 @@ export default function SoumettreePage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [imagesSupp, setImagesSupp] = useState<File[]>([]);
   const [imagesSuppPreviews, setImagesSuppPreviews] = useState<string[]>([]);
+  const [coContribs, setCoContribs] = useState<string[]>([]);
+  const [coSearch, setCoSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const coSearchResults = useMemo(() => {
+    if (!coSearch.trim() || !allUsers) return [];
+    const q = coSearch.toLowerCase();
+    return allUsers
+      .filter((u) =>
+        u.clerkId !== user?.id &&
+        !coContribs.includes(u.clerkId) &&
+        (`${u.prenom} ${u.nom}`.toLowerCase().includes(q))
+      )
+      .slice(0, 5);
+  }, [coSearch, allUsers, user?.id, coContribs]);
 
   const set = (key: keyof typeof form) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -145,6 +160,7 @@ export default function SoumettreePage() {
         agence_creative: form.agence_creative || undefined,
         type_contenu: form.type_contenu || undefined,
         anonyme,
+        co_contributeurs_clerk_ids: coContribs.length ? coContribs : undefined,
       });
 
       router.push(`/contenu/${id}`);
@@ -323,6 +339,56 @@ export default function SoumettreePage() {
             <p className="text-xs font-body text-on-surface-variant mt-1 text-right">
               {form.intention_creative.length}/700
             </p>
+          </div>
+
+          {/* Co-contributeurs */}
+          <div>
+            <Label>Co-contributeurs <span className="text-on-surface-variant/60 font-normal">(optionnel)</span></Label>
+            {coContribs.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {coContribs.map((clerkId) => {
+                  const u = allUsers?.find((x) => x.clerkId === clerkId);
+                  return (
+                    <span key={clerkId} className="flex items-center gap-1 bg-primary/10 text-primary text-xs font-label px-2 py-1 rounded-full">
+                      {u ? `${u.prenom} ${u.nom}` : clerkId}
+                      <button type="button" onClick={() => setCoContribs(prev => prev.filter(id => id !== clerkId))} className="hover:opacity-60 ml-0.5">×</button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            <div className="relative">
+              <Input
+                value={coSearch}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCoSearch(e.target.value)}
+                placeholder="Chercher un membre de la communauté..."
+              />
+              {coSearchResults.length > 0 && (
+                <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-ambient border border-outline-variant/20 overflow-hidden">
+                  {coSearchResults.map((u) => (
+                    <button
+                      key={u._id}
+                      type="button"
+                      onClick={() => { setCoContribs(prev => [...prev, u.clerkId]); setCoSearch(""); }}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-surface-container transition-colors"
+                    >
+                      <div className="w-7 h-7 rounded-lg bg-surface-container flex-shrink-0 relative overflow-hidden">
+                        {u.avatar_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-primary">{u.prenom.charAt(0)}</span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-body text-on-surface">{u.prenom} {u.nom}</p>
+                        {u.poste && <p className="text-xs font-label text-on-surface-variant">{u.poste}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Contribution anonyme */}

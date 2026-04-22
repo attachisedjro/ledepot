@@ -70,6 +70,9 @@ export default function ContenuClient() {
   }
 
   const contributeurNom = contenu.user ? `${contenu.user.prenom} ${contenu.user.nom}` : "Anonyme";
+  type CoUser = { _id: string; clerkId: string; slug?: string; prenom: string; nom: string; poste?: string; avatar_url?: string };
+  const coContributeurs = ((contenu as typeof contenu & { co_contributeurs?: CoUser[] }).co_contributeurs ?? []).filter(Boolean) as CoUser[];
+  const isAuthorOrCoContrib = isSignedIn && user && (contenu.user?.clerkId === user.id || coContributeurs.some((co) => co.clerkId === user.id));
 
   return (
     <div className="min-h-screen bg-surface">
@@ -147,9 +150,9 @@ export default function ContenuClient() {
               <h1 className="font-headline font-bold text-3xl text-on-surface leading-tight">{contenu.titre}</h1>
             </div>
 
-            {/* Contributeur */}
-            <div className="bg-surface-container rounded-2xl p-4">
-              <p className="text-xs font-label uppercase tracking-wider text-on-surface-variant mb-2">Contributeur</p>
+            {/* Contributeur(s) */}
+            <div className="bg-surface-container rounded-2xl p-4 space-y-3">
+              <p className="text-xs font-label uppercase tracking-wider text-on-surface-variant">Publié par</p>
               {contenu.anonyme ? (
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-surface-container-high flex items-center justify-center flex-shrink-0">
@@ -169,9 +172,12 @@ export default function ContenuClient() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <Link href={`/profil/${contenu.user?.slug ?? contenu.userId}`} className="font-body font-medium text-sm text-on-surface hover:text-primary transition-colors">
-                      {contributeurNom}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/profil/${contenu.user?.slug ?? contenu.userId}`} className="font-body font-medium text-sm text-on-surface hover:text-primary transition-colors">
+                        {contributeurNom}
+                      </Link>
+                      <span className="text-xs font-label bg-primary/10 text-primary px-2 py-0.5 rounded-full">Auteur</span>
+                    </div>
                     {contenu.user?.poste && (
                       <p className="text-xs font-label text-on-surface-variant truncate">{contenu.user.poste}</p>
                     )}
@@ -181,6 +187,38 @@ export default function ContenuClient() {
                   </Link>
                 </div>
               )}
+
+              {/* Co-contributeurs */}
+              {coContributeurs.map((co) => (
+                <div key={co._id}>
+                  <div className="border-t border-outline-variant/20 pt-3">
+                    <p className="text-xs font-label uppercase tracking-wider text-on-surface-variant mb-2">Avec la collaboration de</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-surface-container-high flex-shrink-0 relative overflow-hidden">
+                        {co.avatar_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={co.avatar_url} alt={`${co.prenom} ${co.nom}`} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="absolute inset-0 flex items-center justify-center font-headline font-bold text-sm text-primary">
+                            {co.prenom.charAt(0)}{co.nom.charAt(0)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <Link href={`/profil/${co.slug ?? co._id}`} className="font-body font-medium text-sm text-on-surface hover:text-primary transition-colors">
+                          {co.prenom} {co.nom}
+                        </Link>
+                        {co.poste && (
+                          <p className="text-xs font-label text-on-surface-variant truncate">{co.poste}</p>
+                        )}
+                      </div>
+                      <Link href={`/profil/${co.slug ?? co._id}`} className="text-xs font-label text-primary hover:opacity-75 flex-shrink-0">
+                        Portfolio →
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Intention créative */}
@@ -243,8 +281,8 @@ export default function ContenuClient() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
             </a>
 
-            {/* Modifier (auteur seulement) */}
-            {isSignedIn && user && contenu.user?.clerkId === user.id && (
+            {/* Modifier (auteur ou co-contributeur) */}
+            {isAuthorOrCoContrib && (
               <Link
                 href="/mon-compte"
                 className="flex items-center justify-center gap-2 w-full bg-surface-container text-on-surface font-label font-medium px-6 py-3 rounded-xl text-sm hover:bg-surface-container-high transition-colors"

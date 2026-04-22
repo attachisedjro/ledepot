@@ -123,7 +123,14 @@ export const getById = query({
     const contenu = await ctx.db.get(args.id);
     if (!contenu) return null;
     const user = await ctx.db.get(contenu.userId);
-    return { ...contenu, user };
+    const co_contributeurs = contenu.co_contributeurs_clerk_ids?.length
+      ? (await Promise.all(
+          contenu.co_contributeurs_clerk_ids.map((clerkId) =>
+            ctx.db.query("users").withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId)).unique()
+          )
+        )).filter(Boolean)
+      : [];
+    return { ...contenu, user, co_contributeurs };
   },
 });
 
@@ -131,25 +138,29 @@ export const getById = query({
 export const getByIdOrSlug = query({
   args: { idOrSlug: v.string() },
   handler: async (ctx, args) => {
-    // Les slugs contiennent toujours un tiret, les IDs Convex jamais
+    let contenu;
     if (args.idOrSlug.includes("-")) {
-      const contenu = await ctx.db
+      contenu = await ctx.db
         .query("contenus")
         .withIndex("by_slug", (q) => q.eq("slug", args.idOrSlug))
         .first();
-      if (!contenu) return null;
-      const user = await ctx.db.get(contenu.userId);
-      return { ...contenu, user };
     } else {
       try {
-        const contenu = await ctx.db.get(args.idOrSlug as Id<"contenus">);
-        if (!contenu) return null;
-        const user = await ctx.db.get(contenu.userId);
-        return { ...contenu, user };
+        contenu = await ctx.db.get(args.idOrSlug as Id<"contenus">);
       } catch {
         return null;
       }
     }
+    if (!contenu) return null;
+    const user = await ctx.db.get(contenu.userId);
+    const co_contributeurs = contenu.co_contributeurs_clerk_ids?.length
+      ? (await Promise.all(
+          contenu.co_contributeurs_clerk_ids.map((clerkId) =>
+            ctx.db.query("users").withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId)).unique()
+          )
+        )).filter(Boolean)
+      : [];
+    return { ...contenu, user, co_contributeurs };
   },
 });
 
@@ -185,6 +196,7 @@ export const submit = mutation({
     intention_creative: v.string(),
     type_contenu: v.optional(v.string()),
     anonyme: v.optional(v.boolean()),
+    co_contributeurs_clerk_ids: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     let user = await ctx.db
@@ -250,6 +262,7 @@ export const submit = mutation({
       statut: "publie",
       vues: 0,
       slug,
+      co_contributeurs_clerk_ids: args.co_contributeurs_clerk_ids,
     });
   },
 });
@@ -282,6 +295,7 @@ export const updateContenu = mutation({
     visuel_storage_id: v.optional(v.id("_storage")),
     images_supplementaires_storage_ids_to_add: v.optional(v.array(v.id("_storage"))),
     images_supplementaires_index_to_remove: v.optional(v.number()),
+    co_contributeurs_clerk_ids: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
     const contenu = await ctx.db.get(args.id);
@@ -290,7 +304,9 @@ export const updateContenu = mutation({
       .query("users")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
       .unique();
-    if (!user || contenu.userId !== user._id) throw new Error("Non autorisé");
+    const isOwner = user && contenu.userId === user._id;
+    const isCoContrib = contenu.co_contributeurs_clerk_ids?.includes(args.clerkId);
+    if (!isOwner && !isCoContrib) throw new Error("Non autorisé");
 
     await ctx.db.patch(args.id, {
       titre: args.titre,
@@ -329,11 +345,15 @@ export const updateContenu = mutation({
         urls.splice(idx, 1);
         return { images_supplementaires_storage_ids: ids, images_supplementaires_urls: urls };
       })() : {}),
+      // Seul le propriétaire peut modifier les co-contributeurs
+      ...(args.co_contributeurs_clerk_ids !== undefined && isOwner ? {
+        co_contributeurs_clerk_ids: args.co_contributeurs_clerk_ids,
+      } : {}),
     });
   },
 });
 
-// Supprime un contenu (par son propriétaire)
+// Supprime un contenu (par son propriétaire ou un co-contributeur)
 export const supprimerParContributeur = mutation({
   args: { id: v.id("contenus"), clerkId: v.string() },
   handler: async (ctx, args) => {
@@ -343,8 +363,25 @@ export const supprimerParContributeur = mutation({
       .query("users")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
       .unique();
-    if (!user || contenu.userId !== user._id) throw new Error("Non autorisé");
+    const isOwner = user && contenu.userId === user._id;
+    const isCoContrib = contenu.co_contributeurs_clerk_ids?.includes(args.clerkId);
+    if (!isOwner && !isCoContrib) throw new Error("Non autorisé");
     await ctx.db.delete(args.id);
+  },
+});
+
+// Campagnes où l'utilisateur est co-contributeur
+export const getByCoContributeurClerkId = query({
+  args: { clerkId: v.string() },
+  handler: async (ctx, args) => {
+    const all = await ctx.db.query("contenus").order("desc").collect();
+    const coContenus = all.filter((c) => c.co_contributeurs_clerk_ids?.includes(args.clerkId));
+    return await Promise.all(
+      coContenus.map(async (c) => {
+        const user = await ctx.db.get(c.userId);
+        return { ...c, user };
+      })
+    );
   },
 });
 
