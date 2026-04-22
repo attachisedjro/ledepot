@@ -82,21 +82,23 @@ export default function SoumettreePage() {
   const [imagesSuppPreviews, setImagesSuppPreviews] = useState<string[]>([]);
   const [coContribs, setCoContribs] = useState<string[]>([]);
   const [coSearch, setCoSearch] = useState("");
+  const [coFocused, setCoFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const coSearchResults = useMemo(() => {
-    if (!coSearch.trim() || !allUsers) return [];
-    const q = coSearch.toLowerCase();
+    if (!allUsers || !coFocused) return [];
+    const q = coSearch.trim().toLowerCase();
     return allUsers
       .filter((u) => {
         if (u.clerkId === user?.id || coContribs.includes(u.clerkId)) return false;
-        const name = `${u.prenom} ${u.nom}`.trim().toLowerCase();
-        const email = (u.email ?? "").toLowerCase();
-        return name.includes(q) || email.includes(q) || name === "" && q.length >= 2;
+        const name = `${u.prenom} ${u.nom}`.trim();
+        if (!name) return false; // uniquement les membres avec un nom
+        return q === "" || name.toLowerCase().includes(q);
       })
-      .slice(0, 5);
-  }, [coSearch, allUsers, user?.id, coContribs]);
+      .sort((a, b) => `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`, "fr"))
+      .slice(0, 8);
+  }, [coSearch, coFocused, allUsers, user?.id, coContribs]);
 
   const set = (key: keyof typeof form) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -362,15 +364,17 @@ export default function SoumettreePage() {
               <Input
                 value={coSearch}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCoSearch(e.target.value)}
-                placeholder="Chercher un membre de la communauté..."
+                onFocus={() => setCoFocused(true)}
+                onBlur={() => setTimeout(() => setCoFocused(false), 150)}
+                placeholder="Cliquer pour voir les membres..."
               />
               {coSearchResults.length > 0 && (
-                <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-ambient border border-outline-variant/20 overflow-hidden">
+                <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-ambient border border-outline-variant/20 overflow-hidden max-h-64 overflow-y-auto">
                   {coSearchResults.map((u) => (
                     <button
                       key={u._id}
                       type="button"
-                      onClick={() => { setCoContribs(prev => [...prev, u.clerkId]); setCoSearch(""); }}
+                      onClick={() => { setCoContribs(prev => [...prev, u.clerkId]); setCoSearch(""); setCoFocused(false); }}
                       className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-surface-container transition-colors"
                     >
                       <div className="w-7 h-7 rounded-lg bg-surface-container flex-shrink-0 relative overflow-hidden">

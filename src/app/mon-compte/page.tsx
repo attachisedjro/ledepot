@@ -66,6 +66,7 @@ export default function MonComptePage() {
   const [deletingId, setDeletingId] = useState<Id<"contenus"> | null>(null);
   const [editCoContribs, setEditCoContribs] = useState<string[]>([]);
   const [coSearch, setCoSearch] = useState("");
+  const [coFocused, setCoFocused] = useState(false);
   const editVisuelRef = useRef<HTMLInputElement>(null);
   const editImagesSuppRef = useRef<HTMLInputElement>(null);
 
@@ -168,16 +169,18 @@ export default function MonComptePage() {
   const generateUploadUrl = useMutation(api.contenus.generateUploadUrl);
 
   const coSearchResults = useMemo(() => {
-    if (!coSearch.trim() || !allUsers) return [];
-    const q = coSearch.toLowerCase();
+    if (!allUsers || !coFocused) return [];
+    const q = coSearch.trim().toLowerCase();
     return allUsers
-      .filter((u) =>
-        u.clerkId !== user?.id &&
-        !editCoContribs.includes(u.clerkId) &&
-        (`${u.prenom} ${u.nom}`.toLowerCase().includes(q))
-      )
-      .slice(0, 5);
-  }, [coSearch, allUsers, user?.id, editCoContribs]);
+      .filter((u) => {
+        if (u.clerkId === user?.id || editCoContribs.includes(u.clerkId)) return false;
+        const name = `${u.prenom} ${u.nom}`.trim();
+        if (!name) return false;
+        return q === "" || name.toLowerCase().includes(q);
+      })
+      .sort((a, b) => `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`, "fr"))
+      .slice(0, 8);
+  }, [coSearch, coFocused, allUsers, user?.id, editCoContribs]);
 
   const handleEditSave = async () => {
     if (!user || !editingId) return;
@@ -736,16 +739,18 @@ export default function MonComptePage() {
                               <input
                                 value={coSearch}
                                 onChange={(e) => setCoSearch(e.target.value)}
-                                placeholder="Chercher un membre par nom..."
+                                onFocus={() => setCoFocused(true)}
+                                onBlur={() => setTimeout(() => setCoFocused(false), 150)}
+                                placeholder="Cliquer pour voir les membres..."
                                 className="w-full bg-surface-container text-sm font-body text-on-surface px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-on-surface-variant/50"
                               />
                               {coSearchResults.length > 0 && (
-                                <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-ambient border border-outline-variant/20 overflow-hidden">
+                                <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-surface-container-lowest rounded-xl shadow-ambient border border-outline-variant/20 overflow-hidden max-h-64 overflow-y-auto">
                                   {coSearchResults.map((u) => (
                                     <button
                                       key={u._id}
                                       type="button"
-                                      onClick={() => { setEditCoContribs(prev => [...prev, u.clerkId]); setCoSearch(""); }}
+                                      onClick={() => { setEditCoContribs(prev => [...prev, u.clerkId]); setCoSearch(""); setCoFocused(false); }}
                                       className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-surface-container transition-colors"
                                     >
                                       <div className="w-6 h-6 rounded-lg bg-surface-container flex-shrink-0 relative overflow-hidden">
