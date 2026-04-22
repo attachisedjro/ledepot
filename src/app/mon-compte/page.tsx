@@ -724,7 +724,7 @@ export default function MonComptePage() {
                                   const u = allUsers?.find((x) => x.clerkId === clerkId);
                                   return (
                                     <span key={clerkId} className="flex items-center gap-1 bg-primary/10 text-primary text-xs font-label px-2 py-1 rounded-full">
-                                      {u ? `${u.prenom} ${u.nom}` : clerkId}
+                                      {u ? (`${u.prenom} ${u.nom}`.trim() || u.email || `Membre #${u.memberNumber ?? "?"}`) : clerkId}
                                       <button type="button" onClick={() => setEditCoContribs(prev => prev.filter(id => id !== clerkId))} className="hover:opacity-60 ml-0.5">×</button>
                                     </span>
                                   );
@@ -757,7 +757,7 @@ export default function MonComptePage() {
                                         )}
                                       </div>
                                       <div>
-                                        <p className="text-sm font-body text-on-surface">{u.prenom} {u.nom}</p>
+                                        <p className="text-sm font-body text-on-surface">{`${u.prenom} ${u.nom}`.trim() || u.email || `Membre #${u.memberNumber ?? "?"}`}</p>
                                         {u.poste && <p className="text-xs font-label text-on-surface-variant">{u.poste}</p>}
                                       </div>
                                     </button>

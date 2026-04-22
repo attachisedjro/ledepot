@@ -89,11 +89,12 @@ export default function SoumettreePage() {
     if (!coSearch.trim() || !allUsers) return [];
     const q = coSearch.toLowerCase();
     return allUsers
-      .filter((u) =>
-        u.clerkId !== user?.id &&
-        !coContribs.includes(u.clerkId) &&
-        (`${u.prenom} ${u.nom}`.toLowerCase().includes(q))
-      )
+      .filter((u) => {
+        if (u.clerkId === user?.id || coContribs.includes(u.clerkId)) return false;
+        const name = `${u.prenom} ${u.nom}`.trim().toLowerCase();
+        const email = (u.email ?? "").toLowerCase();
+        return name.includes(q) || email.includes(q) || name === "" && q.length >= 2;
+      })
       .slice(0, 5);
   }, [coSearch, allUsers, user?.id, coContribs]);
 
@@ -350,7 +351,7 @@ export default function SoumettreePage() {
                   const u = allUsers?.find((x) => x.clerkId === clerkId);
                   return (
                     <span key={clerkId} className="flex items-center gap-1 bg-primary/10 text-primary text-xs font-label px-2 py-1 rounded-full">
-                      {u ? `${u.prenom} ${u.nom}` : clerkId}
+                      {u ? (`${u.prenom} ${u.nom}`.trim() || u.email || `Membre #${u.memberNumber ?? "?"}`) : clerkId}
                       <button type="button" onClick={() => setCoContribs(prev => prev.filter(id => id !== clerkId))} className="hover:opacity-60 ml-0.5">×</button>
                     </span>
                   );
@@ -381,7 +382,7 @@ export default function SoumettreePage() {
                         )}
                       </div>
                       <div>
-                        <p className="text-sm font-body text-on-surface">{u.prenom} {u.nom}</p>
+                        <p className="text-sm font-body text-on-surface">{`${u.prenom} ${u.nom}`.trim() || u.email || `Membre #${u.memberNumber ?? "?"}`}</p>
                         {u.poste && <p className="text-xs font-label text-on-surface-variant">{u.poste}</p>}
                       </div>
                     </button>
